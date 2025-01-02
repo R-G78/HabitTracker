@@ -1,9 +1,13 @@
 import sqlite3
 from datetime import date 
 
-def get_db(name = 'main.db'):
+def get_db(name = "main.db"):
+    # Connect to the SQLite database file specified by 'name'
     db= sqlite3.connect(name)
+
+    # Ensure the database schema is set up correctly
     create_db(db)
+    # Return the database connection object
     return db 
 
 def create_db(db):

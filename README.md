@@ -7,7 +7,7 @@ This is a Habit Tracker that aligns with the stoicism concept.
 
 ejwroeqh
 
-## Install
+## Installation
 
 `pip install -r requirements.txt`
 

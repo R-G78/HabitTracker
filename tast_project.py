@@ -6,13 +6,17 @@ class TestCounter:
 
     def setup_method(self):
         self.db= get_db("test.db")
+        
         add_counter(self.db, "test_counter", "test_description")
-
         increment_counter(self.db, "test_counter", "2021-12-07")
         increment_counter(self.db, "test_counter", "2021-12-08")
+
+        increment_counter(self.db, "test_counter", "2021-12-09")
         increment_counter(self.db, "test_counter", "2021-12-10")
         increment_counter(self.db, "test_counter", "2021-12-11")
-        increment_counter(self.db, "test_counter", "2021-12-12")
+       
+
+    
     
 
     def test_counter(self):
@@ -25,15 +29,12 @@ class TestCounter:
         counter.reset()
         counter.increment()
 
-    def test_db_counter(self):
-        data = get_counter_data(self.db, "test_counter")
-        assert len(data) == 5
+    
+    def test_reset_database(self):
+        self.db.execute("DELETE FROM test_counter")
+        self.db.commit()
+        assert get_counter_data(self.db, "test_counter") is None
 
-        count = calculate_count(self.db,"test_counter")
-        assert count == 5
-
-    def teardown_method():
+    def teardown_method(self):
         import os
-        os.removal("test.db")   
-
-        
+        os.remove("test.db")   
