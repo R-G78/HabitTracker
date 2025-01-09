@@ -30,6 +30,7 @@ class Counter:
     def add_event(self, db, date: str= None):
         increment_counter(db, self.name, date)
 
+    @classmethod
     def load (cls, db, name):
         """Load a counter from the database by name"""
         cur = db.cursor()
