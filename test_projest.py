@@ -21,11 +21,11 @@ class TestCounter:
         add_counter(self.db, "test_counter", "test_description")
         print("Initial counter added: test_counter with description 'test_description'")
         
-        increment_counter(self.db, "test_counter", "2021-12-07")
-        increment_counter(self.db, "test_counter", "2021-12-08")
-        increment_counter(self.db, "test_counter", "2021-12-10")
-        increment_counter(self.db, "test_counter", "2021-12-11")
-        increment_counter(self.db, "test_counter", "2021-12-12")
+        increment_counter(self.db, "test_counter", "2024-12-07")
+        increment_counter(self.db, "test_counter", "2024-12-08")
+        increment_counter(self.db, "test_counter", "2024-12-10")
+        increment_counter(self.db, "test_counter", "2024-12-11")
+        increment_counter(self.db, "test_counter", "2024-12-12")
         
         # Debugging: Print out the data to confirm it has been added
         print("Database contents after adding increments:")

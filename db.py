@@ -15,7 +15,7 @@ def get_db(name = "main.db"):
     # Return the database connection object
     return db
 
-def create_db(db):
+def create_counters_table(db):
     cur = db.cursor()
 
     cur.execute("""CREATE TABLE IF NOT EXISTS counter( 
@@ -23,9 +23,9 @@ def create_db(db):
         description TEXT)""")
 
     cur.execute("""CREATE TABLE IF NOT EXISTS tracker(
-        date TEXT,
-        counterName TEXT,
-        FOREIGN KEY(counterName) REFERENCES counter(name))""")
+        date TEXT NOT NULL,
+        counterName TEXT NOT NULL,
+        FOREIGN KEY(counterName) REFERENCES counter(name) ON DELETE CASCADE)""")
     
     db.commit()
 
@@ -35,19 +35,27 @@ def add_counter(db, name, description):
     cur = db.cursor()
     try:
         cur.execute("INSERT INTO counter VALUES(?, ?)", (name, description))
+        db.commit()
+        return "Counter added successfully"
     except sqlite3.IntegrityError:
         cur.execute("UPDATE counter SET description=? WHERE name=?", (description, name))
-    db.commit()
+    
 
 def increment_counter(db, name, event_date=None):
     cur= db.cursor()
+    cur.excecute("SELECT * FROM counter WHERE name=?", (name,))
+    if not cur.fetchone():
+        return "Counter does not exist"
+    
     if not event_date:
         from datetime import date 
         event_date = str(date.today())
+
     cur.execute("INSERT INTO tracker VALUES(?, ?)", (event_date, name))
     db.commit()
+    return "Counter incremented successfully"
 
 def get_counter_data(db, name):
     cur= db.cursor()
-    cur.execute("SELECT * FROM tracker WHERE counterName=?", (name,))
+    cur.execute("SELECT * FROM tracker WHERE counterName=? ORDER BY date ASC", (name,))
     return cur.fetchall()

@@ -11,9 +11,13 @@ class Counter:
         
 
     def increment(self):
-        """Increment the counter and update the database"""
-        self.count += 1 
-        increment_counter(self.name)
+        try:
+            """Increment the counter and update the database"""
+            self.count += 1 
+            increment_counter(self.name)
+            print(f"Counter '{self.name}' incremented")
+        except sqlite3.DatabaseError as err:
+            print(f"Error incrementing Counter: {err}")    
 
     def reset(self):
         """Reset the counter to 0"""
@@ -25,10 +29,25 @@ class Counter:
     #db class counter? make*
 
     def store(self, db):
-        add_counter(db, self.name, self.description)
+        try:
+            cur = db.cursor()
+            cur.execute("SELECT name FROM counters WHERE name= ?", (self.name,))
+            if cur.fetchone():
+                print(f"Counter '{self.name}' already exists")
+                return 
+            add_counter(db, self.name, self.description)
+            print(f"Counter '{self.name}' stored successfully")
+        except sqlite3.DatabaseError as err:
+            print(f"Error storing Counter: {err}")
+            
+                         
 
     def add_event(self, db, date: str= None):
-        increment_counter(db, self.name, date)
+        try:
+            increment_counter(db, self.name, date)
+            print(f"Event added to counter '{self.name}'")
+        except sqlite3.DatabaseError as err:
+            print(f"Error adding event to Counter: {err}")
 
     @classmethod
     def load (cls, db, name):
@@ -49,8 +68,23 @@ class Counter:
                 return None
         except sqlite3.DatabaseError as err:
             print (f"Error loading Counter:{err}")
-            return ("Create a new counter")
+            return None
         
+    @staticmethod
+    def list_all_counters(db):
+        """List all counters in the database"""
+        try:
+            cur = db.cursor()
+            cur.execute("SELECT name, description FROM counters")
+            counters = cur.fetchall()
+            if counters:
+                print("These are the existing counters:")
+                for name, description in counters:
+                    print(f"- {name}: {description}")
+            else:
+                print("There are no counters in the database")
+        except sqlite3.DatabaseError as err:
+            print(f"Error loading counters from database: {err}")       
 
 
 
