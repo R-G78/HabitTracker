@@ -43,7 +43,7 @@ def add_counter(db, name, description):
 
 def increment_counter(db, name, event_date=None):
     cur= db.cursor()
-    cur.excecute("SELECT * FROM counter WHERE name=?", (name,))
+    cur.execute("SELECT * FROM counter WHERE name=?", (name,))
     if not cur.fetchone():
         return "Counter does not exist"
     
@@ -51,7 +51,7 @@ def increment_counter(db, name, event_date=None):
         from datetime import date 
         event_date = str(date.today())
 
-    cur.execute("INSERT INTO tracker VALUES(?, ?)", (event_date, name))
+    cur.execute("INSERT INTO tracker (date, counterName) VALUES(?, ?)", (event_date, name))
     db.commit()
     return "Counter incremented successfully"
 

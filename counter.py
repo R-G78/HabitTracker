@@ -10,11 +10,12 @@ class Counter:
         self.count = 0
         
 
-    def increment(self):
+    def increment(self, db):
+        print(f"DEBUG: DB={db}, name={self.name}")
         try:
             """Increment the counter and update the database"""
             self.count += 1 
-            increment_counter(self.name)
+            increment_counter(db, self.name)
             print(f"Counter '{self.name}' incremented")
         except sqlite3.DatabaseError as err:
             print(f"Error incrementing Counter: {err}")    
@@ -31,7 +32,7 @@ class Counter:
     def store(self, db):
         try:
             cur = db.cursor()
-            cur.execute("SELECT name FROM counters WHERE name= ?", (self.name,))
+            cur.execute("SELECT name FROM counter WHERE name= ?", (self.name,))
             if cur.fetchone():
                 print(f"Counter '{self.name}' already exists")
                 return 
@@ -54,7 +55,7 @@ class Counter:
         """Load a counter from the database by name"""
         cur = db.cursor()
         try:
-            cur.execute("SELECT name, description FROM counters WHERE name = ?", (name,))
+            cur.execute("SELECT name, description FROM counter WHERE name = ?", (name,))
             result = cur.fetchone()
             if result:
                 name, description  = result
@@ -75,16 +76,16 @@ class Counter:
         """List all counters in the database"""
         try:
             cur = db.cursor()
-            cur.execute("SELECT name, description FROM counters")
-            counters = cur.fetchall()
-            if counters:
-                print("These are the existing counters:")
-                for name, description in counters:
+            cur.execute("SELECT name, description FROM counter")
+            counter = cur.fetchall()
+            if counter:
+                print("These are the existing counter:")
+                for name, description in counter:
                     print(f"- {name}: {description}")
             else:
-                print("There are no counters in the database")
+                print("There are no counter in the database")
         except sqlite3.DatabaseError as err:
-            print(f"Error loading counters from database: {err}")       
+            print(f"Error loading counter from database: {err}")       
 
 
 

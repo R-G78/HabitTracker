@@ -45,10 +45,9 @@ def cli():
                 try:
                     if counter:
                         # Increment the counter and add an event
-                        counter.increment()
+                        counter.increment(db)
 
                         # Increment the counter and add an event
-                        counter.add_event(db)
                         count = calculate_count(db, name)
                         print (f"Counter'{name} has been incremented. New count:{counter.count} " )
                     else:
