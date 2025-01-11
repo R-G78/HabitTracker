@@ -106,3 +106,4 @@ class TestCounter:
         # Remove the test database using the filename stored earlier
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)  # Remove the unique test db after the test
+
