@@ -5,7 +5,10 @@ from db import get_db, add_counter, increment_counter, get_counter_data
 from analyse import calculate_count
 import sqlite3
 
+
+
 class TestCounter:
+    
     def setup_method(self):
         # Generate a unique test database filename
         self.db_filename = "test_{}.db".format(str(uuid.uuid4()))  # Unique test db for each test run
@@ -39,14 +42,15 @@ class TestCounter:
         CREATE TABLE IF NOT EXISTS counter (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            description TEXT
+            description TEXT                
         );
         """)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS counter_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             counter_id TEXT NOT NULL,
-            event_date TEXT NOT NULL
+            event_date TEXT NOT NULL,
+            UNIQUE (counter_id, event_date) 
         );
         """)
         self.db.commit()
@@ -69,7 +73,7 @@ class TestCounter:
 
         # Increment and add events
         counter.increment()
-        counter.add_event(self.db)
+        
 
         # Debugging output
         print("After first increment and add_event:")
@@ -102,7 +106,8 @@ class TestCounter:
 
     def teardown_method(self):
         # Close and remove the test database
-        self.db.close()
+        if hasattr (self, 'db') and self.db:
+            self.db.close()
         # Remove the test database using the filename stored earlier
         if os.path.exists(self.db_filename):
             os.remove(self.db_filename)  # Remove the unique test db after the test

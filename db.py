@@ -57,5 +57,5 @@ def increment_counter(db, name, event_date=None):
 
 def get_counter_data(db, name):
     cur= db.cursor()
-    cur.execute("SELECT * FROM tracker WHERE counterName=? ORDER BY date ASC", (name,))
+    cur.execute ("SELECT * FROM tracker WHERE counterName=? ORDER BY date ASC",(name,))      
     return cur.fetchall()
