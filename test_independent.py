@@ -3,8 +3,8 @@
 import os
 import sqlite3
 import pytest
-from cli import cli
-from db import get_db, add_counter, increment_counter, get_counter_data
+from main import cli
+from db import get_db, add_counter, increment_counter, get_counter_data, create_counters_table
 from counter import Counter
 from analyse import calculate_count
 from io import StringIO
@@ -16,27 +16,7 @@ def temp_db():
     """Fixture to create a temporary SQLite database for testing."""
     db_filename = "temp_test.db"
     db = get_db(db_filename)
-
-    # Create the tables
-    cursor = db.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS counter (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        description TEXT
-    );
-    """)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS counter_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        counter_id INTEGER NOT NULL,
-        event_date TEXT NOT NULL,
-        UNIQUE (counter_id, event_date),
-        FOREIGN KEY (counter_id) REFERENCES counter (id)
-    );
-    """)
-    db.commit()
-
+    
     yield db  # Provide the database to the tests
 
     # Cleanup
@@ -207,6 +187,9 @@ def test_calculate_count(temp_db):
 
     count = calculate_count(temp_db, "test_counter")
     assert count == 2
+
+    #Reset the counter
+    count.reset()
 
     """Here’s a detailed breakdown of the new test file without unittest. The file was structured for use with pytest and directly tests the cli.py functionality:
 
