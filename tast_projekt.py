@@ -114,7 +114,7 @@ class TestCounter:
 
 import pytest
 from unittest.mock import patch, MagicMock
-from cli import cli
+from cli import main
 from counter import Counter
 from db import get_db, add_counter, increment_counter, get_counter_data
 from analyse import calculate_count

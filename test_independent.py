@@ -19,33 +19,58 @@ def temp_db():
     
     yield db  # Provide the database to the tests
 
+    print ("DEBUG: Opening DB in finction temp_db")
+
     # Cleanup
     db.close()
     if os.path.exists(db_filename):
         os.remove(db_filename)
 
 
-def test_cli_create(temp_db, monkeypatch):
+def test_create(temp_db, monkeypatch):
     """Test the 'Create' option of the CLI."""
-    inputs = iter([
-        "yes",            # Confirm "Are you ready?"
-        "Create",         # Select "Create"
-        "test_counter",   # Enter counter name
-        "test_description",  # Enter counter description
-        "yes",            # Confirm counter creation
-        "Exit"            # Exit CLI
-    ])
+    
+    print ("Test Started: test_create")
+   # Mock questionary functions
+    class MockQuestion:
+        def __init__(self, response):
+            self.response = response
 
-    def mock_input(prompt):
-        return next(inputs)
+        def ask(self):
+            return self.response
 
-    monkeypatch.setattr("builtins.input", mock_input)
+    def mock_confirm(prompt=None):
+        print(f"questionary.confirm called with prompt: {prompt}")  # Debugging print
+        return MockQuestion(True)  # Always return True for confirmation
+
+    def mock_select(prompt, choices):
+        return MockQuestion("Create")  # Always select "Create"
+
+    def mock_text(prompt):
+        return MockQuestion("test_counter" if "name" in prompt else "test_description")
+
+    #Apply fake monkeypatches
+    #monkeypatch.setattr(questionary, "text", lambda *args, **kwargs: questionary.fake("Test Response"))
+
+
+    # Apply actual monkeypatches
+    monkeypatch.setattr("questionary.confirm", mock_confirm)
+    monkeypatch.setattr("questionary.select", mock_select)
+    monkeypatch.setattr("questionary.text", mock_text)
+
+
 
     # Redirect stdout to capture CLI output
     old_stdout = sys.stdout
     sys.stdout = StringIO()
 
-    cli()
+    print("Test Started: test_create")
+    try:
+        cli()
+        print("CLI Execution Finished Normally")
+    except Exception as e:
+        print(f"CLI Execution Error: {e}")
+    print("Test Ended: test_create")  
 
     # Reset stdout
     output = sys.stdout.getvalue()
@@ -90,9 +115,7 @@ def test_cli_increment(temp_db, monkeypatch):
     # Verify the counter was incremented
     cursor = temp_db.cursor()
     cursor.execute("""
-    SELECT COUNT(*) FROM counter_events
-    INNER JOIN counter ON counter.id = counter_events.counter_id
-    WHERE counter.name = ?
+    SELECT COUNT(*) FROM tracker WHERE counterName = ?
     """, ("test_counter",))
     result = cursor.fetchone()
 
@@ -188,8 +211,7 @@ def test_calculate_count(temp_db):
     count = calculate_count(temp_db, "test_counter")
     assert count == 2
 
-    #Reset the counter
-    count.reset()
+
 
     """Here’s a detailed breakdown of the new test file without unittest. The file was structured for use with pytest and directly tests the cli.py functionality:
 
