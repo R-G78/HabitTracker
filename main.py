@@ -5,15 +5,20 @@ from analyse import calculate_count
 
 def cli():
     db = get_db()
+    print("DEBUG: Database connection established")
     confirm = questionary.confirm("Are you ready?").ask()
+    print(f"DEBUG: confirm = {confirm}")
 
     if confirm:
         run = True
+        
         while run:
+            print("DEBUG: Inside the while loop")
             choice = questionary.select(
                 "What do you want to do?",
                 choices=["Create", "Increment", "Analyse", "Exit"]
-            ).ask()  
+            ).ask() 
+            print(f"DEBUG: choice = {choice}") 
             
             #Check if exit was selected then break the loop 
             if choice == "Exit":
@@ -27,11 +32,15 @@ def cli():
             if choice == "Create":
                 description = questionary.text("What is the description of your counter?").ask()
                 count = 0
-                counter = Counter(name, description)
+                print(f"DEBUG: description = {description}")
+    
                 create = questionary.confirm("Do you want to create this counter?").ask()
+                print(f"DEBUG: create = {create}")
 
                 if create:
+                    print("DEBUG: Creating counters table...")
                     create_counters_table(db)
+                    counter = Counter(name, description)
                     counter.store(db)
                     print(f"Counter '{name}' created")
                 else:

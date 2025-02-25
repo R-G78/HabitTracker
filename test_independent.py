@@ -3,6 +3,7 @@
 import os
 import sqlite3
 import pytest
+import questionary
 from main import cli
 from db import get_db, add_counter, increment_counter, get_counter_data, create_counters_table
 from counter import Counter
@@ -16,10 +17,9 @@ def temp_db():
     """Fixture to create a temporary SQLite database for testing."""
     db_filename = "temp_test.db"
     db = get_db(db_filename)
+    print ("DEBUG: Opening DB in finction temp_db")
     
     yield db  # Provide the database to the tests
-
-    print ("DEBUG: Opening DB in finction temp_db")
 
     # Cleanup
     db.close()
@@ -31,46 +31,48 @@ def test_create(temp_db, monkeypatch):
     """Test the 'Create' option of the CLI."""
     
     print ("Test Started: test_create")
-   # Mock questionary functions
-    class MockQuestion:
-        def __init__(self, response):
-            self.response = response
 
-        def ask(self):
-            return self.response
-
+   #Mock questionary functions
     def mock_confirm(prompt=None):
         print(f"questionary.confirm called with prompt: {prompt}")  # Debugging print
-        return MockQuestion(True)  # Always return True for confirmation
+        return True  # Always return True for confirmation
 
     def mock_select(prompt, choices):
-        return MockQuestion("Create")  # Always select "Create"
+        print(f"questionary.select called with prompt: {prompt}, choices: {choices}")  # Debugging print   
+        return "Create"  # Always select "Create"
 
     def mock_text(prompt):
-        return MockQuestion("test_counter" if "name" in prompt else "test_description")
-
+        print(f"questionary.text called with prompt: {prompt}")
+        if "name" in prompt:
+            return "test_counter"  #mocking the counter name
+        elif "description" in prompt:
+            return "test_description" #mocking the counter description
+        else:
+            return "" #default return
+       
     #Apply fake monkeypatches
     #monkeypatch.setattr(questionary, "text", lambda *args, **kwargs: questionary.fake("Test Response"))
 
-
     # Apply actual monkeypatches
-    monkeypatch.setattr("questionary.confirm", mock_confirm)
-    monkeypatch.setattr("questionary.select", mock_select)
-    monkeypatch.setattr("questionary.text", mock_text)
-
-
-
+    monkeypatch.setattr(questionary, "confirm", mock_confirm)
+    monkeypatch.setattr(questionary, "select", mock_select)
+    monkeypatch.setattr(questionary, "text", mock_text)
+   
     # Redirect stdout to capture CLI output
     old_stdout = sys.stdout
     sys.stdout = StringIO()
 
-    print("Test Started: test_create")
-    try:
-        cli()
-        print("CLI Execution Finished Normally")
-    except Exception as e:
-        print(f"CLI Execution Error: {e}")
-    print("Test Ended: test_create")  
+    print("Test Started: Before Cli")
+    #try:
+       # cli()
+        #print("CLI Execution Finished Normally")
+    #except Exception as e:
+        #print(f"CLI Execution Error: {e}")
+    #print("Test Ended: test_create")  
+
+    print("DEBUG: About to call cli()")  # Add this line
+    cli()
+    print("DEBUG: cli() call completed")  # Add this line
 
     # Reset stdout
     output = sys.stdout.getvalue()

@@ -31,6 +31,7 @@ class Counter:
 
     def store(self, db):
         try:
+            print("DEBUG: Checking if the counter exists...")
             cur = db.cursor()
             cur.execute("SELECT name FROM counter WHERE name= ?", (self.name,))
             if cur.fetchone():
