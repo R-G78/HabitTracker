@@ -4,10 +4,10 @@ import sqlite3
 
 class Counter:
 
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str, count: int):
         self.name = name
         self.description = description
-        self.count = 0
+        self.count = count
         
 
     def increment(self, db):
@@ -37,8 +37,9 @@ class Counter:
             if cur.fetchone():
                 print(f"Counter '{self.name}' already exists")
                 return 
-            add_counter(db, self.name, self.description)
-            print(f"Counter '{self.name}' stored successfully")
+            else:
+                add_counter(db, self.name, self.description)
+                print(f"Counter '{self.name}' stored successfully")
         except sqlite3.DatabaseError as err:
             print(f"Error storing Counter: {err}")
             
@@ -52,18 +53,14 @@ class Counter:
             print(f"Error adding event to Counter: {err}")
 
     @classmethod
-    def load (cls, db, name):
+    def load (db, name):
         """Load a counter from the database by name"""
         cur = db.cursor()
         try:
             cur.execute("SELECT name, description FROM counter WHERE name = ?", (name,))
             result = cur.fetchone()
             if result:
-                name, description  = result
-                counter = cls(name, description) # Create a Counter object
-                counter.count = calculate_count(db, name) #Initialize count 
-                print(f"Counter '{name}' loaded")
-                return counter
+                print(f"Counter '{name}' found")
             
             else:
                 print(f"No counter with the name '{name}' exists. Please create a new counter")

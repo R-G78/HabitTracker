@@ -1,5 +1,5 @@
 import questionary
-from db import get_db, create_counters_table
+from db import get_db, create_counters_table, lookup_counter
 from counter import Counter
 from analyse import calculate_count
 
@@ -34,17 +34,23 @@ def cli():
                 count = 0
                 print(f"DEBUG: description = {description}")
     
-                create = questionary.confirm("Do you want to create this counter?").ask()
-                print(f"DEBUG: create = {create}")
-
-                if create:
-                    print("DEBUG: Creating counters table...")
-                    create_counters_table(db)
-                    counter = Counter(name, description)
-                    counter.store(db)
-                    print(f"Counter '{name}' created")
+                create = questionary.confirm(f"Do you want to create this counter {name}:{description}?").ask()
+            
+            
+                counter_exists = lookup_counter(db, name)
+                
+                if counter_exists == True:
+                    print(f"Counter '{name}' already exists. Counter creation cancelled")
+                    break 
                 else:
-                    print("Counter creation cancelled")
+                    print(f"The counter '{name}' with description '{description}' and current count {count} will be created")
+                    print("DEBUG: Creating counters table...")
+                    counter = Counter(name, description, count)
+                    create_counters_table(db)   
+                    counter.store(db)
+                    print(f"Counter '{name}' created successfully")
+                
+                
 
 
             elif choice == "Increment":
