@@ -36,22 +36,21 @@ def cli():
     
                 create = questionary.confirm(f"Do you want to create this counter {name}:{description}?").ask()
             
-            
-                counter_exists = lookup_counter(db, name)
-                
-                if counter_exists == True:
-                    print(f"Counter '{name}' already exists. Counter creation cancelled")
-                    break 
+                if create == True:
+                    counter_exists = lookup_counter(db, name)
+                    
+                    if counter_exists == True:
+                        print(f"Counter '{name}' already exists. Counter creation cancelled")
+                        break 
+                    else:
+                        print(f"The counter '{name}' with description '{description}' and current count {count} will be created")
+                        print("DEBUG: Creating counters table...")
+                        counter = Counter(name, description, count)
+                        create_counters_table(db)   
+                        counter.store(db)
+                        print(f"Counter '{name}' created successfully")
                 else:
-                    print(f"The counter '{name}' with description '{description}' and current count {count} will be created")
-                    print("DEBUG: Creating counters table...")
-                    counter = Counter(name, description, count)
-                    create_counters_table(db)   
-                    counter.store(db)
-                    print(f"Counter '{name}' created successfully")
-                
-                
-
+                    continue 
 
             elif choice == "Increment":
             

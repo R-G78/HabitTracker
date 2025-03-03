@@ -12,15 +12,23 @@ def temp_db():
     print ("DEBUG: Opening DB in finction temp_db")
     
     yield db  # Provide the database to the tests
-
-    # Cleanup
+    
     db.close()
     if os.path.exists(db_filename):
         os.remove(db_filename)
 
 
 def test_create():
-    pass
+    db = get_db()
+    create_counters_table(db)
+    add_counter(db, "test_counter", "test_description")
+    counter = Counter("test_counter", "test_description", 0)
+    counter.store(db)
+    assert counter.name == "test_counter"
+    assert counter.description == "test_description"
+    assert counter.count == 0
+
+    db.close()
 
 
 def test_increment():
@@ -28,4 +36,3 @@ def test_increment():
 
 def test_analyse():
     pass 
-
