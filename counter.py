@@ -53,7 +53,7 @@ class Counter:
             print(f"Error adding event to Counter: {err}")
 
     @classmethod
-    def load (db, name):
+    def load (db, name):   ##delete 
         """Load a counter from the database by name"""
         cur = db.cursor()
         try:

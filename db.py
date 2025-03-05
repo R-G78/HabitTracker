@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import date 
+from analyse import calculate_count
 
 
 def get_db(name = "my_database.db"):
@@ -10,12 +11,14 @@ def get_db(name = "my_database.db"):
     print("Database connection opened.")
 
     # Ensure the database schema is set up correctly
-    create_counters_table(db)
+    #create_counters_table(db)
 
     # Return the database connection object
     return db
 
 def create_counters_table(db):
+    #Create counter and tracker tables
+
     print(f"DEBUG: Database connection: {db}")
     print("Opening cursor...")
     cur = db.cursor()
@@ -104,13 +107,14 @@ def create_counters_table(db):
     db.commit()
     print("Tables committed successfully")
 
-def add_counter(db, name, description):
+def add_counter(db, name, description, count=0):
+    #Add a counter to counter table in database
     try:
         print("DEBUG: Adding counter to the database...")
         cur = db.cursor()
         cur.execute(
-            "INSERT INTO counter (name, description) VALUES(?, ?)", 
-            (name, description)
+            "INSERT INTO counter (name, description, count) VALUES(?, ?, ?)", 
+            (name, description, count)
         )
         db.commit()
         print("DEBUG: Counter added successfully")
@@ -121,15 +125,22 @@ def add_counter(db, name, description):
 
 def increment_counter(db, name, event_date=None):
     cur= db.cursor()
-    cur.execute("SELECT * FROM counter WHERE name=?", (name,))
-    if not cur.fetchone():
-        return "Counter does not exist"
+    exist_counter = lookup_counter(db, name)
+    if exist_counter:
+       cur.execute("UPDATE counter SET count = count + 1 WHERE name=?", (name,)) 
+       db.commit()
+       data = calculate_count(db, name)
+       print(f"Counter '{name}' incremented. New count: {data}")
+    else:
+        print(f"Counter '{name}' does not exist")
+        return False
     
     if not event_date:
         from datetime import date 
         event_date = str(date.today())
+    else:
+        pass
 
-    cur.execute("INSERT INTO tracker (date, counterName) VALUES(?, ?)", (event_date, name))
     db.commit()
     return "Counter incremented successfully"
 
@@ -145,13 +156,17 @@ def printTable (db, table):
 
 def lookup_counter(db, name):
     print(f"DEBUG: Looking up counter '{name}'")
-    cur = db.cursor()
-    cur.execute("SELECT * FROM counter WHERE name=?", (name,))
-    counter_exists = cur.fetchone()
-    if counter_exists:
-        print(f"Counter '{name}' already exists")
-        return True
-    else:
+    try:
+        cur = db.cursor()
+        cur.execute("SELECT * FROM counter WHERE name=?", (name,))
+        counter_exists = cur.fetchone()
+        if counter_exists:
+            print(f"Counter '{name}' already exists")
+            return True
+        else:
+            return False
+    except sqlite3.DatabaseError as err:
+        print(f"Error looking up Counter: {err}")
         return False
 
 def delete_counters_table(db, name):
