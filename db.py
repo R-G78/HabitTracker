@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import date 
-from analyse import calculate_count
+
 
 
 def get_db(name = "my_database.db"):
@@ -128,6 +128,7 @@ def increment_counter(db, name, event_date=None):
     exist_counter = lookup_counter(db, name)
     if exist_counter:
        cur.execute("UPDATE counter SET count = count + 1 WHERE name=?", (name,)) 
+       cur.execute("INSERT INTO tracker (date, currentCount, counterName) VALUES(?, (SELECT count FROM counter WHERE name=?), ?)", (event_date, name, name))
        db.commit()
        data = calculate_count(db, name)
        print(f"Counter '{name}' incremented. New count: {data}")
@@ -145,9 +146,15 @@ def increment_counter(db, name, event_date=None):
     return "Counter incremented successfully"
 
 def get_counter_data(db, name):
+    #Get the data from the counter table
     cur= db.cursor()
     cur.execute ("SELECT * FROM tracker WHERE counterName=? ORDER BY date ASC",(name,))      
     return cur.fetchall()
+
+def calculate_count(db, name):
+    data = get_counter_data(db, name)
+    count = len(data)       
+    return count
 
 def printTable (db, table):
     cur = db.cursor()

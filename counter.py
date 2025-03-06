@@ -1,5 +1,4 @@
 from db import add_counter, increment_counter
-from analyse import calculate_count
 import sqlite3
 
 class Counter:
