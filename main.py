@@ -71,6 +71,8 @@ def cli():
                     print(f"Error incrementing counter: {e}")
 
             elif choice == "Analyse":
+
+                confirmation = questionary.select("What do you want to do?", choices = )
                 counter = Counter.load(db,name)
 
                 if counter:
@@ -87,3 +89,103 @@ if __name__ == '__main__':
     cli()
 
 
+import questionary
+from db import get_db, add_habit, add_completion
+from habit import Habit
+
+def cli():
+    db = get_db()
+    print("Welcome to the Habit Tracker!")
+
+    while True:
+        choice = questionary.select(
+            "What do you want to do?",
+            choices=["Create Habit", "Check Off Habit", "Analyze Habits", "Exit"]
+        ).ask()
+
+        if choice == "Exit":
+            print("Goodbye!")
+            break
+
+        elif choice == "Create Habit":
+            task = questionary.text("What is the name of your habit?").ask()
+            periodicity = questionary.select(
+                "What is the periodicity of your habit?",
+                choices=["daily", "weekly"]
+            ).ask()
+            add_habit(db, task, periodicity)
+            print(f"Habit '{task}' created successfully!")
+
+        elif choice == "Check Off Habit":
+            habit_id = questionary.text("Enter the ID of the habit you want to check off:").ask()
+            add_completion(db, int(habit_id))
+            print(f"Habit with ID {habit_id} checked off!")
+
+        elif choice == "Analyze Habits":
+            # Implement analytics functionality here
+            print("Analytics functionality coming soon!")
+
+
+if __name__ == '__main__':
+    cli()
+
+
+import questionary
+from db import get_db, add_habit, add_completion, get_all_habits, get_completions
+from habit import Habit
+
+def cli():
+    db = get_db()
+    print("Welcome to the Habit Tracker!")
+
+    while True:
+        choice = questionary.select(
+            "What do you want to do?",
+            choices=["Create Habit", "Check Off Habit", "Analyze Habits", "Exit"]
+        ).ask()
+
+        if choice == "Exit":
+            print("Goodbye!")
+            break
+
+        elif choice == "Create Habit":
+            task = questionary.text("What is the name of your habit?").ask()
+            periodicity = questionary.select(
+                "What is the periodicity of your habit?",
+                choices=["daily", "weekly"]
+            ).ask()
+            add_habit(db, task, periodicity)
+            print(f"Habit '{task}' created successfully!")
+
+        elif choice == "Check Off Habit":
+            habits = get_all_habits(db)
+            if not habits:
+                print("No habits found. Please create a habit first.")
+                continue
+
+            habit_choices = [f"{habit[0]}: {habit[1]} ({habit[2]})" for habit in habits]
+            selected_habit = questionary.select(
+                "Select a habit to check off:",
+                choices=habit_choices
+            ).ask()
+
+            habit_id = int(selected_habit.split(":")[0])
+            add_completion(db, habit_id)
+            print(f"Habit '{selected_habit}' checked off!")
+
+        elif choice == "Analyze Habits":
+            habits = get_all_habits(db)
+            if not habits:
+                print("No habits found. Please create a habit first.")
+                continue
+
+            print("\n=== All Habits ===")
+            for habit in habits:
+                completions = get_completions(db, habit[0])
+                print(f"{habit[0]}: {habit[1]} ({habit[2]}) - Completions: {len(completions)}")
+
+            # Add more analytics functionality here
+            print("\nAnalytics functionality coming soon!")
+
+if __name__ == "__main__":
+    cli()

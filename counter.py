@@ -1,88 +1,143 @@
-from db import add_counter, increment_counter
-import sqlite3
+from datetime import datetime, timedelta
 
-class Counter:
+class Habit:
+    def __init__(self, task: str, periodicity: str, creation_date: str = None):
+        self.task = task
+        self.periodicity = periodicity  # "daily" or "weekly"
+        self.creation_date = creation_date or str(datetime.now().date())
+        self.completion_dates = []  # List of dates when the habit was checked off
 
-    def __init__(self, name: str, description: str, count: int):
-        self.name = name
-        self.description = description
-        self.count = count
+    def check_off(self):
+        """Mark the habit as completed for the current period."""
+        today = str(datetime.now().date())
+        if today not in self.completion_dates:
+            self.completion_dates.append(today)
+            print(f"Habit '{self.task}' checked off for {today}.")
+        else:
+            print(f"Habit '{self.task}' already checked off for {today}.")
+
+    def calculate_streak(self):
+        """Calculate the current streak for the habit."""
+        if not self.completion_dates:
+            return 0
+
+        sorted_dates = sorted(self.completion_dates)
+        streak = 1
+        max_streak = 1
+
+        for i in range(1, len(sorted_dates)):
+            current_date = datetime.strptime(sorted_dates[i], "%Y-%m-%d").date()
+            previous_date = datetime.strptime(sorted_dates[i - 1], "%Y-%m-%d").date()
+
+            if self.periodicity == "daily":
+                if (current_date - previous_date) == timedelta(days=1):
+                    streak += 1
+                else:
+                    max_streak = max(max_streak, streak)
+                    streak = 1
+            elif self.periodicity == "weekly":
+                if (current_date - previous_date) <= timedelta(weeks=1):
+                    streak += 1
+                else:
+                    max_streak = max(max_streak, streak)
+                    streak = 1
+
+        return max(max_streak, streak)
+
+    def is_habit_broken(self):
+        """Check if the habit is broken for the current period."""
+        today = datetime.now().date()
+        last_completion = (
+            datetime.strptime(self.completion_dates[-1], "%Y-%m-%d").date()
+            if self.completion_dates
+            else None
+        )
+
+        if not last_completion:
+            return True
+
+        if self.periodicity == "daily":
+            return (today - last_completion) > timedelta(days=1)
+        elif self.periodicity == "weekly":
+            return (today - last_completion) > timedelta(weeks=1)
         
 
-    def increment(self, db):
-        print(f"DEBUG: DB={db}, name={self.name}")
-        try:
-            """Increment the counter and update the database"""
-            self.count += 1 
-            increment_counter(db, self.name)
-            print(f"Counter '{self.name}' incremented")
-        except sqlite3.DatabaseError as err:
-            print(f"Error incrementing Counter: {err}")    
+from datetime import datetime, timedelta
 
-    def reset(self):
-        """Reset the counter to 0"""
-        self.count = 0
+class Habit:
+    def __init__(self, task: str, periodicity: str, creation_date: str = None):
+        """
+        Initialize a Habit object.
 
-    def __str__(self):
-        return f"{self.name}:{self.count}"
-    
-    #db class counter? make*
+        :param task: The task or name of the habit.
+        :param periodicity: The periodicity of the habit ("daily" or "weekly").
+        :param creation_date: The date the habit was created (default: current date).
+        """
+        self.task = task
+        self.periodicity = periodicity
+        self.creation_date = creation_date or str(datetime.now().date())
+        self.completion_dates = []  # List of dates when the habit was checked off
 
-    def store(self, db):
-        try:
-            print("DEBUG: Checking if the counter exists...")
-            cur = db.cursor()
-            cur.execute("SELECT name FROM counter WHERE name= ?", (self.name,))
-            if cur.fetchone():
-                print(f"Counter '{self.name}' already exists")
-                return 
-            else:
-                add_counter(db, self.name, self.description)
-                print(f"Counter '{self.name}' stored successfully")
-        except sqlite3.DatabaseError as err:
-            print(f"Error storing Counter: {err}")
-            
-                         
+    def check_off(self):
+        """
+        Mark the habit as completed for the current period.
+        """
+        today = str(datetime.now().date())
+        if today not in self.completion_dates:
+            self.completion_dates.append(today)
+            print(f"Habit '{self.task}' checked off for {today}.")
+        else:
+            print(f"Habit '{self.task}' already checked off for {today}.")
 
-    def add_event(self, db, date: str= None):
-        try:
-            increment_counter(db, self.name, date)
-            print(f"Event added to counter '{self.name}'")
-        except sqlite3.DatabaseError as err:
-            print(f"Error adding event to Counter: {err}")
+    def calculate_streak(self):
+        """
+        Calculate the current streak for the habit.
 
-    @classmethod
-    def load (db, name):   ##delete 
-        """Load a counter from the database by name"""
-        cur = db.cursor()
-        try:
-            cur.execute("SELECT name, description FROM counter WHERE name = ?", (name,))
-            result = cur.fetchone()
-            if result:
-                print(f"Counter '{name}' found")
-            
-            else:
-                print(f"No counter with the name '{name}' exists. Please create a new counter")
-                return None
-        except sqlite3.DatabaseError as err:
-            print (f"Error loading Counter:{err}")
-            return None
-        
-    @staticmethod
-    def list_all_counters(db):
-        """List all counters in the database"""
-        try:
-            cur = db.cursor()
-            cur.execute("SELECT name, description FROM counter")
-            counter = cur.fetchall()
-            if counter:
-                print("These are the existing counter:")
-                for name, description in counter:
-                    print(f"- {name}: {description}")
-            else:
-                print("There are no counter in the database")
-        except sqlite3.DatabaseError as err:
-            print(f"Error loading counter from database: {err}")       
+        :return: The longest streak of consecutive completions.
+        """
+        if not self.completion_dates:
+            return 0
 
+        sorted_dates = sorted(self.completion_dates)
+        streak = 1
+        max_streak = 1
 
+        for i in range(1, len(sorted_dates)):
+            current_date = datetime.strptime(sorted_dates[i], "%Y-%m-%d").date()
+            previous_date = datetime.strptime(sorted_dates[i - 1], "%Y-%m-%d").date()
 
+            if self.periodicity == "daily":
+                if (current_date - previous_date) == timedelta(days=1):
+                    streak += 1
+                else:
+                    max_streak = max(max_streak, streak)
+                    streak = 1
+            elif self.periodicity == "weekly":
+                if (current_date - previous_date) <= timedelta(weeks=1):
+                    streak += 1
+                else:
+                    max_streak = max(max_streak, streak)
+                    streak = 1
+
+        return max(max_streak, streak)
+
+    def is_habit_broken(self):
+        """
+        Check if the habit is broken for the current period.
+
+        :return: True if the habit is broken, False otherwise.
+        """
+        today = datetime.now().date()
+        last_completion = (
+            datetime.strptime(self.completion_dates[-1], "%Y-%m-%d").date()
+            if self.completion_dates
+            else None
+        )
+
+        if not last_completion:
+            return True
+
+        if self.periodicity == "daily":
+            return (today - last_completion) > timedelta(days=1)
+        elif self.periodicity == "weekly":
+            return (today - last_completion) > timedelta(weeks=1)
