@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import date 
+from datetime import date , timedelta
 
 
 
@@ -244,15 +244,46 @@ def add_completion(db, habit_id: int, completion_date: str = None):
     :param habit_id: The ID of the habit.
     :param completion_date: The date the habit was completed (default: current date).
     """
+    today = datetime.now().date()
+
     if not completion_date:
         completion_date = str(datetime.now().date())
 
+    #Get habit periodicity
     cur = db.cursor()
+    cur.execute(
+        "SELECT periodicity FROM habits WHERE id=?", (habit_id,)
+    )
+    habit = cur.fetchone()
+    if not habit:
+        print("Habit not found.")
+        return
+
+    periodicity = habit[0]
+
+    # Get last completion date
+    cur.execute("SELECT completion_date FROM completions WHERE habit_id=? ORDER BY completion_date DESC LIMIT 1", (habit_id,))
+    last_completion = cur.fetchone()
+    last_completion_date = datetime.strptime(last_completion[0], "%Y-%m-%d").date() if last_completion else None
+
+  # Determine the period start
+    if periodicity == "daily":
+        period_start = today
+    elif periodicity == "weekly":
+        period_start = today - timedelta(days=today.weekday())  # Start of the week (Monday)
+
+    
+    # Check if the habit was already completed in the current period
+    if last_completion_date and last_completion_date >= period_start:
+        print(f"Habit already completed for the current {periodicity} period.")
+        return
+
     cur.execute(
         "INSERT INTO completions (habit_id, completion_date) VALUES (?, ?)",
         (habit_id, completion_date)
     )
     db.commit()
+    print (f"Habit checked for {periodicity} period")
 
 def get_all_habits(db):
     """
