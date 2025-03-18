@@ -49,7 +49,7 @@ def add_habit(db, name, task, count=0):
         print("DEBUG: habit added successfully")
         #return "habit added successfully"
     except sqlite3.IntegrityError:
-        cur.execute("UPDATE habit SET task=? WHERE name=?", (description, name))
+        cur.execute("UPDATE habit SET task=? WHERE name=?", (task, name))
     
 
 def increment_habit(db, name, event_date=None):
