@@ -49,7 +49,34 @@ def cli():
             if not habits:
                 print("No habits found. Please create a habit first.")
                 continue
+            
+            # NEW ANALYSE FUNCTIONALITY
+            # This is the new functionality added to the CLI for habit analysis
+            #The user can choose whether they want to analyse one habit or all habits
+            print("\n=== Habit Analysis ===")
+            print("1. Analyze a specific habit")
+            print("2. Analyze all habits")
+            analysis_choice = input("Choose an option (1/2): ")
 
+            if analysis_choice == "1":
+                # Analyze a specific habit
+                habit_name = input("Enter the habit name: ").strip()
+                habit = next((h for h in habits if h[1].lower() == habit_name.lower()), None)
+
+                if habit:
+                    completions = get_completions(db, habit[0])
+                    streak = calculate_streak(completions)
+                    print(f"\nAnalysis for '{habit[1]}':")
+                    print(f"Completions: {len(completions)}")
+                    print(f"Longest streak: {streak} days")
+                else:
+                    print(f"Habit '{habit_name}' not found.")
+
+
+
+
+
+            #PRIOR ANALYSE FUNCTIONALITY
             # New functionality
             print("\n=== Analytics ===")
             print("1. List habits with the same periodicity")
