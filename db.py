@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta 
 
 def get_db(name="my_database.db"):
     """
@@ -9,7 +9,6 @@ def get_db(name="my_database.db"):
     :return: A database connection object.
     """
     db = sqlite3.connect(name)
-    create_tables(db)
     return db
 
 def create_tables(db):
