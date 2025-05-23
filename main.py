@@ -1,8 +1,8 @@
 
 import questionary
-from db import get_db, add_habit, add_completion, get_all_habits, get_completions
+from db import get_db, add_habit, add_completion, get_all_habits, get_completions, select_habit, get_habit_by_name, delete_habit
 from counter import Habit
-from analyse import calculate_streak
+from analyse import calculate_streak, calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
 
 def cli():
     db = get_db()
@@ -11,7 +11,7 @@ def cli():
     while True:
         choice = questionary.select(
             "What do you want to do?",
-            choices=["Create Habit", "Check Off Habit", "Analyze Habits", "Exit"]
+            choices=["Create Habit", "Check Off Habit", "Analyze Habits", "Delete Habit", "Exit"]
         ).ask()
 
         if choice == "Exit":
@@ -43,12 +43,94 @@ def cli():
             add_completion(db, habit_id)
             print(f"Habit '{selected_habit}' checked off!")
 
+        elif choice == "Delete Habit":
+            all_habits = get_all_habits(db)  # Assume this returns a list of tuples like (id, name, periodicity, date)
+
+            if not all_habits:
+                print(" No habits to delete.")
+                continue
+            
+            # Format choices for display but still keep the id for deletion
+            choices = [
+                questionary.Choice(title=f"{habit[1]} ({habit[2]}) — started {habit[3]}", value=habit[0])
+                for habit in all_habits
+            ]
+            
+            habit_to_delete = questionary.select(
+                "Select a habit to delete:",
+                choices=choices
+            ).ask()
+
+            confirm = questionary.confirm(
+                f"Are you sure you want to delete '{habit_to_delete}' and all its data?"
+            ).ask()
+
+            if confirm:
+                delete_habit(habit_to_delete)
+                print(f"Habit '{habit_to_delete}' deleted.")
+            else:
+                print("Deletion cancelled.")
+
         
         elif choice == "Analyze Habits":
-            habits = get_all_habits(db)
+            habits = [str(get_all_habits(db))]
             if not habits:
                 print("No habits found. Please create a habit first.")
                 continue
+
+            choices = questionary.select(
+                "Habit Analysis Options",
+                choices=["Analyse a specific habit", "Analyze all habits"]
+            ).ask()
+        
+            if choices == "Analyse a specific habit":
+                habit_name = select_habit()
+
+                if habit_name: 
+                    habit_data = get_habit_by_name(habit_name)
+                    completion_dates = db.get_completion_dates(habit_name)
+
+                    habit = Habit(habit_data['name'], habit_data['periodicity'], completion_dates)
+                    max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
+
+                    print(f"\n Max streak for '{habit.name}': {max_streak}")
+                    if max_streak > 1:
+                        print(f"  ➤ Start date: {start_date}")
+                        print(f"  ➤ End date: {end_date}")
+                    print(f"Number of streak breaks: {breaks}\n")
+
+                    # Calculate current streak
+                    current_streak, start_date = habit.calculate_current_streak()
+                    print(f"The current streak of the habit {habit} : {current_streak} days, since {start_date}")
+                
+            elif choices == "Analyze all habits":
+                choice = questionary.select(
+                    "What would you like to know?",
+                    choices=["Return a list of all currently tracked habits", "Return a list of habits with the same periodicity", "Longest run streak of all habits", "Longest overall habit streak", "Exit"]
+                ).ask ()
+
+                if choice == "Exit":
+                    print ("Goodbye!")
+                    break
+
+                elif choice == "Return a list of all currently tracked habits":
+                    
+                    print("\n=== All Habits ===")
+                    summaries = get_allHabit_summaries(db)
+                    for habit in summaries:
+                        print(f"📌 {habit['name']} — {habit['periodicity']} — started on {habit['start_date']}")
+                        
+
+                elif choice == "Return a list of habits with the same periodicity":
+                    pass
+
+                elif choice == "Longest run streak of all habits":
+                    pass 
+
+                elif choice == "Longest overall habit streak":
+                    pass
+
+
             
             # NEW ANALYSE FUNCTIONALITY
             # This is the new functionality added to the CLI for habit analysis

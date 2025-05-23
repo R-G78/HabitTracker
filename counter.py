@@ -16,72 +16,47 @@ class Habit:
         else:
             print(f"Habit '{self.task}' already checked off for {today}.")
 
-    def calculate_streak(self):
-        """Calculate the current streak for the habit."""
+
+    def calculate_max_streak_with_details(self): 
+        """Calculate the maximum streak with start/end dates and number of breaks."""
         if not self.completion_dates:
-            return 0
+            return 0, None, None, 0
 
         sorted_dates = sorted(self.completion_dates)
-        streak = 1
         max_streak = 1
+        current_streak = 1
+        breaks = 0
+
+        max_streak_start = max_streak_end = datetime.strptime(sorted_dates[0], "%Y-%m-%d").date()
+        current_streak_start = max_streak_start
 
         for i in range(1, len(sorted_dates)):
             current_date = datetime.strptime(sorted_dates[i], "%Y-%m-%d").date()
             previous_date = datetime.strptime(sorted_dates[i - 1], "%Y-%m-%d").date()
 
-           #if self.periodicity == "daily":
-                #if (current_date - previous_date) == timedelta(days=1):
-                    #streak += 1
-                #else:
-                    #max_streak = max(max_streak, streak)
-                    #streak = 1
-            #elif self.periodicity == "weekly":
-                #if (current_date - previous_date) <= timedelta(weeks=1):
-                    #streak += 1
-                #else:
-                    #max_streak = max(max_streak, streak)
-                    #streak = 1
-
-        #return max(max_streak, streak)
-            
             if self.periodicity == "daily":
                 expected_previous = current_date - timedelta(days=1)
             elif self.periodicity == "weekly":
                 expected_previous = current_date - timedelta(weeks=1)
+            else:
+                raise ValueError(f"Unsupported periodicity: {self.periodicity}")
 
             if previous_date == expected_previous:
-                streak += 1
+                current_streak += 1
             else:
-                max_streak = max(max_streak, streak)
-                streak = 1
+                # Break occurred
+                breaks += 1
+                if current_streak > max_streak:
+                    max_streak = current_streak
+                    max_streak_start = current_streak_start
+                    max_streak_end = previous_date
+                current_streak = 1
+                current_streak_start = current_date
 
-        return max(max_streak, streak)
+        # Final streak check
+        if current_streak > max_streak:
+            max_streak = current_streak
+            max_streak_start = current_streak_start
+            max_streak_end = datetime.strptime(sorted_dates[-1], "%Y-%m-%d").date()
 
-    def is_habit_broken(self):
-        """Check if the habit is broken for the current period."""
-        #today = datetime.now().date()
-        #last_completion = (
-            #datetime.strptime(self.completion_dates[-1], "%Y-%m-%d").date()
-            #if self.completion_dates
-            #else None
-        #)
-
-        #if not last_completion:
-            #return True
-
-        #if self.periodicity == "daily":
-            #return (today - last_completion) > timedelta(days=1)
-        #elif self.periodicity == "weekly":
-            #return (today - last_completion) > timedelta(weeks=1)
-    
-        """Check if the habit streak is broken."""
-        today = datetime.now().date()
-        if not self.completion_dates:
-            return True  # No completions means the streak is broken
-
-        last_completion = datetime.strptime(self.completion_dates[-1], "%Y-%m-%d").date()
-
-        if self.periodicity == "daily":
-            return (today - last_completion) > timedelta(days=1)
-        elif self.periodicity == "weekly":
-            return (today - last_completion) > timedelta(weeks=1)    
+        return max_streak, max_streak_start, max_streak_end, breaks  
