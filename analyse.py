@@ -113,3 +113,4 @@ def calculate_current_streak(self):
         return 0
 
     return streak, streak_start.strftime("%Y-%m-%d")
+

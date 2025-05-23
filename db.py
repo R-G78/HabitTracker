@@ -159,6 +159,92 @@ def get_habit_by_name(habit_name):
         return {"name": row[0], "periodicity": row[1]}
     return None
 
+def get_periodicity(habit_name):
+    """
+    Retrieve a habit's periodicity from the database.
+    Returns the periodicity or None if the habit doesn't exist.
+    """
+    conn = get_db()
+
+    cursor = conn.execute(
+        "SELECT periodicity FROM habits WHERE task = ?",
+        (habit_name,)
+    )
+    row = cursor.fetchone()
+    if row:
+        return {"periodicity": row[0]}
+    return None
+
+def get_longest_overall_streak(db):
+    """
+    Retrieve the longest streak across all habits.
+    """
+    cur = db.cursor()
+    cur.execute("SELECT MAX(streak) FROM completions")
+    return cur.fetchone()
+
+def get_max_streak_ofHabit( completions, periodicity):
+   
+    if not completions:
+        return 0, None, None, 0
+
+    sorted_dates = sorted(datetime.strptime(d, "%Y-%m-%d").date() for d in completions)
+    max_streak = streak = 1
+    breaks = 0
+
+    start_date = current_start = sorted_dates[0]
+    end_date = sorted_dates[0]
+
+    for i in range(1, len(sorted_dates)):
+        expected = timedelta(days=1) if periodicity == "daily" else timedelta(weeks=1)
+        if sorted_dates[i] - sorted_dates[i - 1] == expected:
+            streak += 1
+            end_date = sorted_dates[i]
+        else:
+            breaks += 1
+            if streak > max_streak:
+                max_streak = streak
+                start_date = current_start
+                end_date = sorted_dates[i - 1]
+            streak = 1
+            current_start = sorted_dates[i]
+
+    # Final check after loop
+    if streak > max_streak:
+        max_streak = streak
+        start_date = current_start
+        end_date = sorted_dates[-1]
+
+    return max_streak, start_date, end_date, breaks
+
+def get_greatest_overall_streak(db):
+    habits = get_all_habits(db)
+    best_streak = 0
+    best_habit = None
+    best_start = None
+    best_end = None
+    best_breaks = 0
+
+    for habit in habits:
+        habit_id, name, periodicity, _ = habit
+        completions = get_completions(db, habit_id)
+        streak, start, end, breaks = get_max_streak_ofHabit(completions, periodicity)
+        
+        if streak > best_streak:
+            best_streak = streak
+            best_habit = name
+            best_start = start
+            best_end = end
+            best_breaks = breaks
+
+    return {
+        "habit": best_habit,
+        "streak": best_streak,
+        "start_date": best_start,
+        "end_date": best_end,
+        "breaks": best_breaks
+    }
+
 def delete_habit(habit_id):
     """
     Delete a habit and its completion records from the database.
