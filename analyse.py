@@ -9,18 +9,23 @@ def get_all_habits(db):
 
 def get_allHabit_summaries(db):
     """
-    Returns a list of all habits with their name, periodicity, and start (creation) date.
+    Returns a list of all habits with their name, periodicity,start (creation) date and last_completion_date. 
     Example:
     [
-        {"name": "Workout", "periodicity": "daily", "start_date": "2025-04-01"},
-        {"name": "Meditate", "periodicity": "weekly", "start_date": "2025-03-15"},
+        {"name": "Workout", "periodicity": "daily", "start_date": "2025-04-01", "last_completion_date": "2025-04-07"},
+        {"name": "Meditate", "periodicity": "weekly", "start_date": "2025-03-15", "last_completion_date": "2025-04-05"},
         ...
     ]
     """
     conn = get_db()
     cursor = conn.execute("SELECT * , periodicity, creation_date FROM habits")
+    cursor = conn.execute(
+        "SELECT *, completion_date FROM completions "
+        "JOIN habits ON completions.habit_id = habits.id "
+        "ORDER BY creation_date DESC"
+    )
     return [
-        {"name": row[0], "periodicity": row[1], "start_date": row[2]}
+        {"name": row[0], "periodicity": row[1], "start_date": row[2], "last_completion_date": row[3]}
         for row in cursor.fetchall()
     ]
 
@@ -114,3 +119,4 @@ def calculate_current_streak(self):
 
     return streak, streak_start.strftime("%Y-%m-%d")
 
+print(get_allHabit_summaries(get_db()))

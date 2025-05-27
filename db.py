@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta 
 import questionary
 
+
 def get_db(name="my_database.db"):
     """
     Connect to the SQLite database.
@@ -64,45 +65,19 @@ def add_completion(db, habit_id: int, completion_date: str = None):
     if not completion_date:
         completion_date = str(datetime.now().date())
 
-    #Get habit periodicity
     cur = db.cursor()
-    cur.execute(
-        "SELECT periodicity FROM habits WHERE id=?", (habit_id,)
-    )
-    habit = cur.fetchone()
-    if not habit:
-        print("Habit not found.")
+
+    verify = check_last_completion(db, habit_id)
+    if not verify:
+        print("Habit already checked for the periodicity")
         return
-
-    periodicity = habit[0]
-
-    # Get last completion date
-    cur.execute("SELECT completion_date FROM completions WHERE habit_id=? ORDER BY completion_date DESC LIMIT 1", (habit_id,))
-    last_completion = cur.fetchone()
-    last_completion_date = datetime.strptime(last_completion[0], "%Y-%m-%d").date() if last_completion else None
-
-  # Determine the period start
-    if periodicity == "daily":
-        period_start = today
-    elif periodicity == "weekly":
-        period_start = today - timedelta(days=today.weekday())  # Start of the week (Monday)
-    elif periodicity == "monthly":
-        period_start = today.replace(day=1)  # First day of the current month
-    else:
-        print("Unknown periodicity.")
-        return
-        
-    # Check if the habit was already completed in the current period
-    if last_completion_date and last_completion_date >= period_start:
-        print(f"Habit already completed for the current {periodicity} period.")
-        return
-
+    
     cur.execute(
         "INSERT INTO completions (habit_id, completion_date) VALUES (?, ?)",
         (habit_id, completion_date)
     )
     db.commit()
-    print (f"Habit checked for {periodicity} period")
+    print (f"Habit checked for the period")
 
 def get_all_habits(db):
     """
@@ -127,7 +102,7 @@ def get_completions(db, habit_id: int):
     cur.execute("SELECT completion_date FROM completions WHERE habit_id=?", (habit_id,))
     return [row[0] for row in cur.fetchall()]
 
-def select_habit(db):
+def select_habit(db):#delete
     # Get list of habit names from the DB
     habits = get_all_habits(db)  # returns e.g. ["Drink Water", "Workout", "Meditate"]
 
@@ -142,22 +117,44 @@ def select_habit(db):
 
     return selected
 
-def get_habit_by_name(habit_name):
-    """
-    Retrieve a habit's name and periodicity from the database.
-    Returns a dictionary or None if the habit doesn't exist.
-    """
 
-    conn = get_db()
 
-    cursor = conn.execute(
-        "SELECT name, periodicity FROM habits WHERE name = ?",
-        (habit_name,)
+def get_habit_data(db, habit_identifier):
+    """
+    Retrieve a habit's name, periodicity, and last completion date.
+
+    :param db: SQLite DB connection
+    :param habit_identifier: Either the habit name (str) or ID (int)
+    :return: dict with name, periodicity, and last completion date
+    """
+    cur = db.cursor()
+
+    # Decide whether we're searching by name or ID
+    if isinstance(habit_identifier, int):
+        cur.execute("SELECT id, task, periodicity FROM habits WHERE id = ?", (habit_identifier,))
+    else:
+        cur.execute("SELECT id, task, periodicity FROM habits WHERE name = ?", (habit_identifier,))
+
+    habit = cur.fetchone()
+    if not habit:
+        return {"error": "Habit not found."}
+
+    habit_id, task, periodicity = habit
+
+    # Get last completion date
+    cur.execute(
+        "SELECT completion_date FROM completions WHERE habit_id = ? ORDER BY completion_date DESC LIMIT 1",
+        (habit_id,)
     )
-    row = cursor.fetchone()
-    if row:
-        return {"name": row[0], "periodicity": row[1]}
-    return None
+    last = cur.fetchone()
+    last_completion = last[0] if last else None
+
+    return {
+        "name": task,
+        "periodicity": periodicity,
+        "last_completion_date": last_completion
+    }
+   
 
 def get_periodicity(habit_name):
     """
@@ -246,6 +243,7 @@ def get_greatest_overall_streak(db):
     }
 
 def delete_habit(habit_id):
+
     """
     Delete a habit and its completion records from the database.
     """
@@ -255,3 +253,86 @@ def delete_habit(habit_id):
     # Delete completions associated with the habit
     conn.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
     conn.commit()
+
+
+
+from datetime import datetime, timedelta
+from db import get_habit_data
+
+def check_last_completion(db, habit_name):
+    """
+    Compares the last completion date of a habit with the current date
+    and returns whether the habit can be checked off again based on its periodicity.
+
+    :param db: The database connection.
+    :param habit_name: The name of the habit to check.
+    :param last_completion_date: The date of the last completion.
+    :param today: The current date.    
+    :param periodicity: The periodicity of the habit ("daily", "weekly", "monthly").
+
+    :return: A dictionary with the periodicity data.
+    """
+    # Get habit data from the database
+    habit_data = get_habit_data(db, habit_name)
+    if not habit_data:
+        print(f"Habit '{habit_name}' not found.")
+        return None
+    
+    today = datetime.now().date()
+
+    periodicity = habit_data.get('periodicity')
+    last_completion_date = habit_data.get('last_completion_date')
+
+    if not periodicity:
+        print("No periodicity provided for the habit.")
+        return None
+    
+    
+   
+    start_of_week = today - timedelta(days=today.weekday())  # Start of the week (Monday)
+    week = [start_of_week + timedelta(days=i) for i in range(7)]  # Mon–Sun
+
+    start_of_month = today.replace(day=1)  # First day of the current month
+    # Get the first day of the next month
+    if today.month == 12:
+        next_month = today.replace(year=today.year + 1, month=1, day=1)
+    else:
+        next_month = today.replace(month=today.month + 1, day=1)
+    num_days = (next_month - start_of_month).days
+    month = [start_of_month + timedelta(days=i) for i in range(num_days)]
+
+    # Check if the habit can be checked off again based on its periodicity
+    if not periodicity:
+        print("No periodicity provided.")
+        return None
+    if not last_completion_date:
+        return True
+    
+
+    if periodicity == "daily":
+        if last_completion_date == today:
+            return False 
+        else :
+            return True
+    elif periodicity == "weekly":
+        # last_ompletion, days_of week 
+        if last_completion_date in week:
+            return False
+        else:
+            return True
+    elif periodicity == "monthly":
+        # last_completion, month
+        if last_completion_date in month:
+            return False
+        else:
+            return True
+
+
+
+   
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 
 import questionary
-from db import get_db, add_habit, add_completion, get_all_habits, get_completions, select_habit, get_habit_by_name, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity 
+from db import get_db, add_habit, add_completion, get_all_habits, get_completions, select_habit, get_habit_data, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity 
 from counter import Habit
 from analyse import calculate_streak, calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
 
@@ -22,12 +22,13 @@ def cli():
             task = questionary.text("What is the name of your habit?").ask()
             periodicity = questionary.select(
                 "What is the periodicity of your habit?",
-                choices=["daily", "weekly"]
+                choices=["daily", "weekly", "monthly"]
             ).ask()
             add_habit(db, task, periodicity)
-            print(f"Habit '{task}' created successfully!")
+            print(f"Habit '{task}' with periodicity {periodicity} bas been created successfully!")
 
         elif choice == "Check Off Habit":
+
             habits = get_all_habits(db)
             if not habits:
                 print("No habits found. Please create a habit first.")
@@ -73,7 +74,7 @@ def cli():
 
         
         elif choice == "Analyze Habits":
-            habits = [str(get_all_habits(db))]
+            habits = get_all_habits(db)
             if not habits:
                 print("No habits found. Please create a habit first.")
                 continue
@@ -84,7 +85,7 @@ def cli():
             ).ask()
         
             if choices == "Analyse a specific habit":
-                habit_name = select_habit()
+                habit_name = select_habit(db)
 
                 if habit_name: 
                     habit_data = get_habit_by_name(habit_name)
