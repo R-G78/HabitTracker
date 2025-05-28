@@ -119,4 +119,3 @@ def calculate_current_streak(self):
 
     return streak, streak_start.strftime("%Y-%m-%d")
 
-print(get_allHabit_summaries(get_db()))
