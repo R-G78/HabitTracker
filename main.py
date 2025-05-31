@@ -84,22 +84,25 @@ def cli():
             ).ask()
         
             if choices == "Analyse a specific habit":
-                habit_name = [f"{habit[0]}: {habit[1]} ({habit[2]})" for habit in habits]
+                habit_name = [f"{habit[0]}: {habit[1]}:({habit[2]})" for habit in habits]
                 selected_habit = questionary.select(
                     "Select a habit to Analyse:",
                     choices=habit_name
                 ).ask()
 
-                if habit_name: 
-                    habit_name = int(selected_habit.split(":")[0])
-                    habit_data = get_habit_data(db, habit_name)
-                    completion_dates = get_completions(db, habit_name)
+                if selected_habit: 
+                    habit_analyse = int(selected_habit.split(":")[0]) 
+                    habit_data = get_habit_data(db, habit_analyse) 
+                    if not habit_data:
+                        print(f"Habit '{habit_analyse}' not found.")
+                        continue
+                    completion_dates = get_completions(db, habit_analyse)
 
                     habit = Habit(habit_data['name'], habit_data['periodicity'], habit_data['creation_date'],  completion_dates)
                     max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
 
                     print(f"\n Max streak for '{habit.task}': {max_streak}")
-                    if max_streak > 1:
+                    if max_streak > 0:
                         print(f"  ➤ Start date: {start_date}")
                         print(f"  ➤ End date: {end_date}")
                     print(f"Number of streak breaks: {breaks}\n")

@@ -45,6 +45,7 @@ def add_habit(db, task: str, periodicity: str):
     :param task: The task or name of the habit.
     :param periodicity: The periodicity of the habit ("daily" or "weekly").
     """
+    
     cur = db.cursor()
     cur.execute(
         "INSERT INTO habits (task, periodicity, creation_date) VALUES (?, ?, ?)",
@@ -339,7 +340,6 @@ def reset_database(db):
     cur.execute("DELETE FROM sqlite_sequence WHERE name='completions'")
     db.commit()
     print("Database reset: All habits and completions deleted, ID counters reset.")
-
 
 
 

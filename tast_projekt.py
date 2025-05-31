@@ -703,3 +703,20 @@ def calculate_streak(self):
             return (today - last_completion) > timedelta(weeks=1)    
 
 
+
+def test_increment(temp_db):
+    db, db_filename = temp_db
+    create_counters_table(db)
+    add_counter(db, "test_counter1", "test_description1")
+    counter = Counter("test_counter1", "test_description1", 0)
+    counter.store(db)
+    increment_counter(db, "test_counter1", "2025-01-01")
+    counter.count += 1 
+    increment_counter(db, "test_counter1", "2025-01-02")
+    counter.count += 1
+    assert counter.name == "test_counter1"
+    assert counter.description == "test_description1"
+    assert counter.count == 2
+    db.close()
+    if os.path.exists(db_filename):
+        os.remove(db_filename)
