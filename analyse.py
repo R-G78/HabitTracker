@@ -1,5 +1,6 @@
 from db import get_db
 from datetime import datetime, timedelta
+import sqlite3
 
 def get_all_habits(db):
     """Return a list of all habits."""
@@ -18,16 +19,33 @@ def get_allHabit_summaries(db):
     ]
     """
     conn = get_db()
-    cursor = conn.execute("SELECT * , periodicity, creation_date FROM habits")
-    cursor = conn.execute(
-        "SELECT *, completion_date FROM completions "
-        "JOIN habits ON completions.habit_id = habits.id "
-        "ORDER BY creation_date DESC"
-    )
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.execute("""
+        SELECT 
+            habits.id AS id,
+            habits.task AS name,
+            habits.periodicity,
+            habits.creation_date AS start_date,
+            habits.streak,
+            MAX(completions.completion_date) AS last_completion_date
+        FROM habits
+        LEFT JOIN completions ON habits.id = completions.habit_id
+        GROUP BY habits.id
+        ORDER BY habits.creation_date DESC
+    """)
+
     return [
-        {"name": row[0], "periodicity": row[1], "start_date": row[2], "last_completion_date": row[3]}
+        {
+            "name": row["name"],
+            "periodicity": row["periodicity"],
+            "start_date": row["start_date"],
+            "last_completion_date": row["last_completion_date"] or "Never",
+            "streak": row["streak"]
+        }
         for row in cursor.fetchall()
     ]
+
 
 def get_habits_by_periodicity(db, periodicity):
     """Return a list of habits with the same periodicity."""

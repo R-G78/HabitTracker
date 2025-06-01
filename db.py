@@ -23,7 +23,8 @@ def create_tables(db):
             id INTEGER PRIMARY KEY,
             task TEXT NOT NULL,
             periodicity TEXT NOT NULL,
-            creation_date TEXT NOT NULL
+            creation_date TEXT NOT NULL,
+            streak INTEGER DEFAULT 0
         )
     """)
     
@@ -43,7 +44,7 @@ def add_habit(db, task: str, periodicity: str):
 
     :param db: The database connection.
     :param task: The task or name of the habit.
-    :param periodicity: The periodicity of the habit ("daily" or "weekly").
+    :param periodicity: The periodicity of the habit ("daily" or "weekly" or "monthly").
     """
     
     cur = db.cursor()
@@ -77,7 +78,7 @@ def add_completion(db, habit_id: int, completion_date: str = None):
         print("Habit not found.")
         return
 
-    habit_name = row[0]
+    habit_name = row[1]
     verify = check_last_completion(db, habit_name)
 
     if not verify:
@@ -121,9 +122,6 @@ def check_last_completion(db, habit_name):
     
     last_completion_date = datetime.strptime(last_completion_date, "%Y-%m-%d").date()
 
-    if not periodicity:
-        print("No periodicity provided for the habit.")
-        return None
    
     #Build week range
     start_of_week = today - timedelta(days=today.weekday())  # Start of the week (Monday)
@@ -152,14 +150,12 @@ def check_last_completion(db, habit_name):
             return False 
         else :
             return True
-    elif periodicity == "weekly":
-        # last_ompletion, days_of week 
+    elif periodicity == "weekly": 
         if last_completion_date in week:
             return False
         else:
             return True
     elif periodicity == "monthly":
-        # last_completion, month
         if last_completion_date in month:
             return False
         else:
@@ -174,12 +170,10 @@ def get_habit_data(db, habit_identifier):
     :return: dict with name, periodicity, and last completion date
     """
     cur = db.cursor()
-
-    # Decide whether we're searching by name or ID
     if isinstance(habit_identifier, int):
         cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE id = ?", (habit_identifier,))
     else:
-        cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE id = ?", (habit_identifier,))
+        cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE task = ?", (habit_identifier,))
 
     habit = cur.fetchone()
     if not habit:
@@ -196,6 +190,7 @@ def get_habit_data(db, habit_identifier):
     last_completion = last[0] if last else None
 
     return {
+        "id": habit_id,
         "name": task,
         "periodicity": periodicity,
         "creation_date": creation_date,
@@ -264,7 +259,7 @@ def get_max_streak_ofHabit( completions, periodicity):
         return 0, None, None, 0
 
     sorted_dates = sorted(datetime.strptime(d, "%Y-%m-%d").date() for d in completions)
-    max_streak = streak = 1
+    max_streak = streak = 0
     breaks = 0
 
     start_date = current_start = sorted_dates[0]
@@ -301,7 +296,10 @@ def get_greatest_overall_streak(db):
     best_breaks = 0
 
     for habit in habits:
-        habit_id, name, periodicity, _ = habit
+        habit_id = habit[0]
+        name = habit[1]
+        periodicity = habit[2]
+
         completions = get_completions(db, habit_id)
         streak, start, end, breaks = get_max_streak_ofHabit(completions, periodicity)
         
@@ -345,5 +343,17 @@ def reset_database(db):
 
 
 
+#reset_database(get_db())
 
 
+def add_streak_column_if_missing(db):
+    cursor = db.cursor()
+    # Check if 'streak' column exists
+    cursor.execute("PRAGMA table_info(habits)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "streak" not in columns:
+        cursor.execute("ALTER TABLE habits ADD COLUMN streak INTEGER DEFAULT 0")
+        db.commit()
+
+
+#add_streak_column_if_missing(get_db())

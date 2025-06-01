@@ -1,10 +1,10 @@
 import os
 import pytest 
-from db import get_db, create_tables, add_habit, add_completion
+from db import get_db, create_tables, add_habit, add_completion, get_completions
 from counter import Habit
 from datetime import datetime, timedelta
 import random
-from analyse import get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit, calculate_streak
+from analyse import get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit, calculate_streak, calculate_current_streak, get_allHabit_summaries
 
 
 @pytest.fixture
@@ -84,23 +84,34 @@ def temp_db_setup(temp_db):
         habit_ids[name] = habit_id
 
     start_date = datetime.now() - timedelta(days=120)
-    for offset in range(121):
+    for offset in range(28):
         current_date = start_date + timedelta(days=offset)
         date_str = current_date.strftime("%Y-%m-%d")
         for name, periodicity in habits:
             habit_id = habit_ids[name]
-            if periodicity == "daily" and random.random() < 0.9:
+
+            # Introduce intentional breaks
+            if name == "Drink Water" :  
                 add_completion(db, habit_id, date_str)
-            elif periodicity == "weekly" and current_date.weekday() == 6 and random.random() < 0.95:
+
+            elif name == "Workout" and current_date.weekday() == 6 and offset % 14 != 0:  # Skip every 2nd Sunday
                 add_completion(db, habit_id, date_str)
-            elif periodicity == "monthly" and current_date.day == 1 and random.random() < 0.98:
+
+            elif name == "Meditate" and offset % 8 != 0:  # Skip every 8th day
                 add_completion(db, habit_id, date_str)
+
+            elif name == "Clean Room" and current_date.weekday() == 6 and offset % 21 != 0:
+                add_completion(db, habit_id, date_str)
+
+            elif name == "Pay Bills" and current_date.day == 1:
+                add_completion(db, habit_id, date_str)
+
 
     return db
 
 
-
 def test_increment_constraints(temp_db_setup):
+    """Test that checking off a habit on the same day or in the same week/month is not allowed."""
     db = temp_db_setup
 
     # Get a daily habit with a checkoff
@@ -135,23 +146,45 @@ def test_increment_constraints(temp_db_setup):
     assert not result, "Should not allow checking off a monthly habit in the same month again."
     
 
-def test_show_monthlies(temp_db_setup):
+def test_analyse_all_habit(temp_db_setup):
     db = temp_db_setup
-    results = db.execute("""
-        SELECT habits.task, completions.completion_date
-        FROM completions
-        JOIN habits ON habits.id = completions.habit_id
-        WHERE habits.periodicity = 'monthly'
-    """).fetchall()
 
-    print("\nMonthly Checkoffs:")
-    for name, date in results:
-        print(f"{name} - {date}")
+    # Get all habits from the DB
+    habits = db.execute("SELECT id, task, periodicity, creation_date FROM habits").fetchall()
+    assert habits, "No habits found in test DB"
+    
+    for habit_row in habits:
+        habit_id, task, periodicity, creation_date = habit_row
 
-    assert len(results) >= 3  # Should have ~4 if data spans 4 months
+        # Get completions for that habit
+        completions = get_completions(db, habit_id)
+        assert completions, f"No completions found for habit '{task}'"
 
-def test_analyse_specific_habit():
-    pass
+        # Create a Habit instance
+        habit = Habit(task=task , periodicity=periodicity, creation_date=creation_date, completion_dates=completions)
+
+        # Max streak analysis
+        max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
+        print(f"Max streak for '{task}': {max_streak}")
+        if max_streak > 0:
+            print(f"  ➤ Start date: {start_date}")
+            print(f"  ➤ End date: {end_date}")
+        print(f"Number of streak breaks: {breaks}")
+
+        assert isinstance(max_streak, int)
+        assert isinstance(breaks, int)
+        if max_streak > 0:
+            assert start_date is not None and end_date is not None
+            assert start_date <= end_date
+
+        # Current streak
+        current_result = habit.calculate_current_streak()
+        if current_result == 0:
+            assert True  # No current streak
+        else:
+            current_streak, streak_start_date = current_result
+            assert isinstance(current_streak, int)
+            assert isinstance(streak_start_date, str)
 
 def temp_db_close(temp_db):
      db, db_filename = temp_db

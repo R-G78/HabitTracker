@@ -8,6 +8,7 @@ def cli():
     db = get_db()
     print("Welcome to the Habit Tracker!")
 
+
     while True:
         choice = questionary.select(
             "What do you want to do?",
@@ -24,24 +25,43 @@ def cli():
                 "What is the periodicity of your habit?",
                 choices=["daily", "weekly", "monthly"]
             ).ask()
-            add_habit(db, task, periodicity)
+            habit = Habit(task, periodicity)
+            habit.store()
             print(f"Habit '{task}' with periodicity {periodicity} bas been created successfully!")
 
-        elif choice == "Check Off Habit":
+        elif choice == "Check Off Habit": #done
 
             habits = get_all_habits(db)
             if not habits:
                 print("No habits found. Please create a habit first.")
                 continue
 
-            habit_choices = [f"{habit[0]}: {habit[1]} ({habit[2]})" for habit in habits]
+            # Create a mapping: display index → real habit ID
+            index_to_id = {}
+            habit_choices = []
+ 
+            for idx, habit in enumerate(habits, start=1):
+                index_to_id[str(idx)] = habit[0]  # habit[0] is the real DB habit_id
+                habit_choices.append(f"{idx}: {habit[1]} ({habit[2]})")  # habit[1]=name, habit[2]=periodicity
+
             selected_habit = questionary.select(
                 "Select a habit to check off:",
                 choices=habit_choices
             ).ask()
 
-            habit_id = int(selected_habit.split(":")[0])
-            add_completion(db, habit_id)
+           # Extract index from selection and look up real habit_id
+            selected_index = selected_habit.split(":")[0]  # e.g., "2" from "2: Fly (daily)"
+            habit_id = index_to_id[selected_index] 
+
+            data = get_habit_data(db, habit_id)
+            habit = Habit(
+                data['id'],
+                data['name'],
+                data['periodicity'], 
+                data['creation_date'], 
+                get_completions(db, habit_id))
+            habit.increment()
+
             
         elif choice == "Delete Habit":
             all_habits = get_all_habits(db)  # Assume this returns a list of tuples like (id, name, periodicity, date)
@@ -49,18 +69,19 @@ def cli():
             if not all_habits:
                 print(" No habits to delete.")
                 continue
-            
-            # Format choices for display but still keep the id for deletion
+
             choices = [
-                questionary.Choice(title=f"{habit[1]} ({habit[2]}) — started {habit[3]}", value=habit[0])
-                for habit in all_habits
+                questionary.Choice(
+                    title=f"{i} — {habit[1]} ({habit[2]}) — started {habit[3]}",
+                    value=habit[0]  # keeps the original habit_id
+                )
+                for i, habit in enumerate(all_habits, 1)
             ]
-            
+
             habit_to_delete = questionary.select(
                 "Select a habit to delete:",
                 choices=choices
             ).ask()
-
             confirm = questionary.confirm(
                 f"Are you sure you want to delete '{habit_to_delete}' and all its data?"
             ).ask()
@@ -84,38 +105,49 @@ def cli():
             ).ask()
         
             if choices == "Analyse a specific habit":
-                habit_name = [f"{habit[0]}: {habit[1]}:({habit[2]})" for habit in habits]
-                selected_habit = questionary.select(
-                    "Select a habit to Analyse:",
-                    choices=habit_name
+                habits = get_all_habits(db)
+                if not habits:
+                    print("No habits found.")
+                    continue
+
+                # Display cleanly indexed choices
+                choices = [
+                    questionary.Choice(title=f"{i} — {habit[1]} ({habit[2]})", value=habit[0])
+                    for i, habit in enumerate(habits, 1)
+                ]
+
+                selected_habit_id = questionary.select(
+                    "Select a habit to analyse:",
+                    choices=choices
                 ).ask()
 
-                if selected_habit: 
-                    habit_analyse = int(selected_habit.split(":")[0]) 
-                    habit_data = get_habit_data(db, habit_analyse) 
+                if selected_habit_id: 
+                    habit_data = get_habit_data(db, selected_habit_id) 
                     if not habit_data:
-                        print(f"Habit '{habit_analyse}' not found.")
+                        print(f"Habit ID '{selected_habit_id}' not found.")
                         continue
-                    completion_dates = get_completions(db, habit_analyse)
+                    completion_dates = get_completions(db, selected_habit_id)
 
-                    habit = Habit(habit_data['name'], habit_data['periodicity'], habit_data['creation_date'],  completion_dates)
+                    habit = Habit(habit_data['name'], habit_data['periodicity'], habit_data['creation_date'], completion_dates)
                     max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
 
-                    print(f"\n Max streak for '{habit.task}': {max_streak}")
+                    print(f"\nMax streak for '{habit.task}': {max_streak}")
                     if max_streak > 0:
                         print(f"  ➤ Start date: {start_date}")
                         print(f"  ➤ End date: {end_date}")
                     print(f"Number of streak breaks: {breaks}\n")
 
-                    # Calculate current streak
-                    result = habit.calculate_current_streak()
+                    for completion_date in completion_dates:
+                        print(f"Completion date: {completion_date}")
 
+                    # Current streak
+                    result = habit.calculate_current_streak()
                     if result == 0:
                         print("No current streak.")
                     else:
                         current_streak, start_date = result
                         print(f"Current streak: {current_streak} (since {start_date})")
-                  
+            
             elif choices == "Analyze all habits":
                 choice = questionary.select(
                     "What would you like to know?",
@@ -130,25 +162,29 @@ def cli():
                     
                     print("\n=== All Habits ===")
                     summaries = get_allHabit_summaries(db)
-                    for habit in summaries:
-                        print(f"{habit['name']} — {habit['periodicity']} — started on {habit['start_date']}")
-                    continue    
+
+                    index_to_id = {}
+
+                    for i, habit in enumerate(summaries, 1):
+                        print(f"{i} — {habit['name']} — {habit['periodicity']} — started on {habit['start_date']}")
+                        index_to_id[i] = habit['id']  # store mapping of display index → actual DB habit_id   
+                        continue 
 
                 elif choice == "Return a list of habits with the same periodicity":
                     periodicity = questionary.select(
                         "What is the periodicity of the habits you want to see?",
-                        choices=["daily", "weekly"]
+                        choices=["daily", "weekly", "monthly"]
                     ).ask()
 
                     same_period_habits = get_habits_by_periodicity(db, periodicity)
-                    
+
                     if same_period_habits:
                         print(f"\nHabits with {periodicity} periodicity:")
-                        for habit in same_period_habits:
-                            print(f"- {habit[1]}")
+                        for i, habit in enumerate(same_period_habits, 1):
+                            # habit is assumed to be tuple (id, name, periodicity, creation_date)
+                            print(f"{i} — {habit[1]} (started on {habit[3]})")
                     else:
                         print(f"No habits found with {periodicity} periodicity.")
-                    
 
                 elif choice == "Longest run streak of every Habit":
                     habits = get_all_habits(db)
@@ -157,7 +193,7 @@ def cli():
                         completions = get_completions(db, habit[0])
                         periodicity = get_periodicity(habit[0])
                         max_streak, start_date, end_date, breaks = get_max_streak_ofHabit( completions, periodicity)
-                        print(f"Longest streak for '{habit[0]}': {max_streak} days")
+                        print(f"Longest streak for '{habit[1]}': {max_streak} days")
                         print(f"From {start_date} to {end_date}")
                     
 

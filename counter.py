@@ -1,65 +1,52 @@
 from datetime import datetime, timedelta
+import sqlite3
+from db import get_db, add_habit, add_completion
 
+   
 class Habit:
-    def __init__(self, task: str, periodicity: str, creation_date: str = None, completion_dates = None):
-        self.task = task
-        self.periodicity = periodicity  # "daily" or "weekly" "monthly"
-        self.creation_date = creation_date or str(datetime.now().date())
-        self.completion_dates = []  # List of dates when the habit was checked off
-    
-    import sqlite3
-from datetime import datetime
-
-class Habit:
-    def __init__(self, habit_id, task, periodicity, creation_date, completion_dates=None):
-        self.habit_id = habit_id
+    def __init__(self, task: str, periodicity: str, id=None, habit_streak: int = 0, creation_date: str = None, completion_dates=None):
         self.task = task
         self.periodicity = periodicity
-        self.creation_date = creation_date
-        self.completion_dates = completion_dates
+        self.id = id
+        self.streak = habit_streak  # Current streak count
+        self.creation_date = creation_date or str(datetime.now().date())
+        self.completion_dates = completion_dates  # List of dates when the habit was checked off
 
-    @classmethod
-    def from_db(cls, db, habit_id):
-        """Create a Habit instance from the database using its ID."""
-        cur = db.cursor()
-        cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE id=?", (habit_id,))
-        row = cur.fetchone()
-
-        if not row:
-            raise ValueError(f"Habit with ID {habit_id} not found.")
-
-        cur.execute(
-            "SELECT completion_date FROM completions WHERE habit_id=? ORDER BY completion_date DESC LIMIT 1",
-            (habit_id,)
-        )
-        last_completion = cur.fetchone()
-        last_completion_date = last_completion[0] if last_completion else None
-
-        return cls(
-            habit_id=row[0],
-            task=row[1],
-            periodicity=row[2],
-            creation_date=row[3],
-            last_completion_date=last_completion_date
-        )
-    
-    def check_off(self):
+    def store(self):
+        """Store the habit in the database."""
+        # This method should implement the logic to store the habit in a database
+        db = get_db()
+        add_habit(db, self.task, self.periodicity)
+        
+    def increment(self):
         """Mark the habit as completed for the current period."""
-        today = str(datetime.now().date())
-        if today not in self.completion_dates:
-            self.completion_dates.append(today)
-            print(f"Habit '{self.task}' checked off for {today}.")
-        else:
-            print(f"Habit '{self.task}' already checked off for {today}.")
+        db = get_db()
+        add_completion(db, self.task, datetime.now().strftime("%Y-%m-%d"))
+        self.update_current_streak()
 
 
+    def update_current_streak(self):
+        """Update the current streak attribute of the habit and sync with the database."""
+        result = self.calculate_current_streak()
+        self.streak = result[0] if isinstance(result, tuple) else 0
+
+        # Update the database
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE habits SET streak = ? WHERE id = ?",
+            (self.streak, self.task)
+        )
+        conn.commit()
+
+    
     def calculate_max_streak_with_details(self): 
         """Calculate the maximum streak with start/end dates and number of breaks."""
         if not self.completion_dates:
             return 0, None, None, 0
 
         sorted_dates = sorted(self.completion_dates)
-        max_streak = 1
+        max_streak = 0
         current_streak = 1
         breaks = 0
 
@@ -118,6 +105,8 @@ class Habit:
                 expected_previous = current_date - timedelta(days=1)
             elif self.periodicity == "weekly":
                 expected_previous = current_date - timedelta(weeks=1)
+            elif self.periodicity == "monthly":
+                expected_previous = current_date - timedelta(days=30)
             else:
                 raise ValueError(f"Unsupported periodicity: {self.periodicity}")
 
@@ -134,6 +123,9 @@ class Habit:
             return 0
         elif self.periodicity == "weekly" and (today - last_valid_date).days > 7:
             return 0
+        elif self.periodicity == "monthly" and (today.month != last_valid_date.month or today.year != last_valid_date.year):
+            return 0
 
         return streak, streak_start.strftime("%Y-%m-%d")
 
+   
