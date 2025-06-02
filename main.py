@@ -1,14 +1,38 @@
 
 import questionary
-from db import get_db, add_habit, add_completion, get_all_habits, get_completions, get_habit_data, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity 
+from db import get_db, add_habit, add_completion, get_all_habits, get_completions, get_habit_data, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity, reset_database 
 from counter import Habit
 from analyse import calculate_streak, calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
+from seed import seed_demo_data
 
 def cli():
-    db = get_db()
-    print("Welcome to the Habit Tracker!")
+    
+    print("\n Welcome to the Habit Tracker\n")
+    db = get_db()  # Connect to the SQLite database
 
+    choice = questionary.select(
+        "Would you like to start with demo data or a clean slate?",
+        choices=[
+            "Use demo data (preloaded habits and completions)",
+            "Clear database and start fresh",
+            "Continue with existing data"
+        ]
+    ).ask()
 
+    if choice == "Use demo data (preloaded habits and completions)":
+        seed_demo_data()
+    
+        print("Demo data loaded. You're good to go!\n")
+
+    elif choice == "Clear database and start fresh":
+        reset_database(db)
+        print("Database cleared. You can now create your own habits.\n")
+
+    elif choice == "Continue with existing data":
+        print("Continuing with existing data. You can manage your habits.\n")
+    
+    
+    # Main loop for the CLI
     while True:
         choice = questionary.select(
             "What do you want to do?",
@@ -19,7 +43,7 @@ def cli():
             print("Goodbye!")
             break
 
-        elif choice == "Create Habit": #done
+        elif choice == "Create Habit": 
             task = questionary.text("What is the name of your habit?").ask()
             periodicity = questionary.select(
                 "What is the periodicity of your habit?",
@@ -29,7 +53,7 @@ def cli():
             habit.store()
             print(f"Habit '{task}' with periodicity {periodicity} bas been created successfully!")
 
-        elif choice == "Check Off Habit": #done
+        elif choice == "Check Off Habit": 
 
             habits = get_all_habits(db)
             if not habits:
@@ -39,7 +63,7 @@ def cli():
             # Create a mapping: display index → real habit ID
             index_to_id = {}
             habit_choices = []
- 
+
             for idx, habit in enumerate(habits, start=1):
                 index_to_id[str(idx)] = habit[0]  # habit[0] is the real DB habit_id
                 habit_choices.append(f"{idx}: {habit[1]} ({habit[2]})")  # habit[1]=name, habit[2]=periodicity
@@ -49,7 +73,7 @@ def cli():
                 choices=habit_choices
             ).ask()
 
-           # Extract index from selection and look up real habit_id
+        # Extract index from selection and look up real habit_id
             selected_index = selected_habit.split(":")[0]  # e.g., "2" from "2: Fly (daily)"
             habit_id = index_to_id[selected_index] 
 
@@ -205,8 +229,8 @@ def cli():
                     print(f" Streaks were broken {result['breaks']} times")
 
 
+                
             
-        
 
 if __name__ == "__main__":
     cli()

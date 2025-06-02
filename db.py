@@ -331,6 +331,10 @@ def delete_habit(habit_id):
     conn.commit()
 
 def reset_database(db):
+    """
+    Deletes all habits and completions from the database.
+    Also resets the ID counters for both tables.
+     """
     cur = db.cursor()
     cur.execute("DELETE FROM completions")
     cur.execute("DELETE FROM habits")

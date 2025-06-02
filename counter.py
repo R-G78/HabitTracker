@@ -101,20 +101,16 @@ class Habit:
         for i in range(1, len(sorted_dates)):
             current_date = sorted_dates[i]
 
-            if self.periodicity == "daily":
-                expected_previous = current_date - timedelta(days=1)
-            elif self.periodicity == "weekly":
-                expected_previous = current_date - timedelta(weeks=1)
-            elif self.periodicity == "monthly":
-                expected_previous = current_date - timedelta(days=30)
-            else:
-                raise ValueError(f"Unsupported periodicity: {self.periodicity}")
+            delta = (current_date - last_valid_date).days
 
-            if last_valid_date == expected_previous:
-                streak += 1
-            else:
-                # Break happened
-                streak = 1  # reset streak starting from here
+        if self.periodicity == "daily" and delta == 1:
+            streak += 1
+        elif self.periodicity == "weekly" and 1 <= delta <= 7:
+            streak += 1
+        elif self.periodicity == "monthly" and 28 <= delta <= 31:
+            streak += 1
+        else:
+            streak = 1
             last_valid_date = current_date
 
         # Check if the current streak is still ongoing

@@ -720,3 +720,68 @@ def test_increment(temp_db):
     db.close()
     if os.path.exists(db_filename):
         os.remove(db_filename)
+
+        def seed_demo_data():
+    '''
+    Wipes and resets database and inserts 5 habits(daily/weekly/monthly)
+    Adds  realistic completions (with some randomness)
+    Ensure “Read Stoicism” has no breaks for clean streak testing
+
+    : param: None
+    : return: None
+    '''
+    # Connect to the SQLite database
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Reset tables if they exist
+    cursor.execute("DELETE FROM completions")
+    cursor.execute("DELETE FROM habits")
+    conn.commit()
+
+    # Predefined habits
+    habits = [
+        ("Drink Water", "daily"),           # Frequent habit
+        ("Workout", "weekly"),              # Normal habit
+        ("Read Stoicism", "daily"),         # This one will have NO breaks
+        ("Clean Room", "weekly"),           
+        ("Pay Bills", "monthly")
+    ]
+
+    habit_ids = {}
+    today = datetime.today()
+
+    # Add habits
+    for name, periodicity in habits:
+        add_habit(conn, name, periodicity)
+        habit_id = cursor.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
+        habit_ids[name] = habit_id
+
+    # Backfill completions for the past 4 weeks
+    start_date = today - timedelta(days=28)
+    for offset in range(29):
+        date = start_date + timedelta(days=offset)
+        date_str = date.strftime("%Y-%m-%d")
+
+        for name, periodicity in habits:
+            habit_id = habit_ids[name]
+
+            # "Read Stoicism" will have no breaks
+            if name == "Read Stoicism":
+                if periodicity == "daily":
+                    add_completion(conn, habit_id, date_str)
+
+            elif periodicity == "daily":
+                if random.random() < 0.9:
+                    add_completion(conn, habit_id, date_str)
+
+            elif periodicity == "weekly" and date.weekday() == 6:  # Sundays
+                if random.random() < 0.95:
+                    add_completion(conn, habit_id, date_str)
+
+            elif periodicity == "monthly" and date.day == 1:
+                add_completion(conn, habit_id, date_str)
+
+    conn.commit()
+    conn.close()
+    print("✅ Demo data seeded successfully.")
