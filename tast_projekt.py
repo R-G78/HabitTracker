@@ -721,6 +721,16 @@ def test_increment(temp_db):
     if os.path.exists(db_filename):
         os.remove(db_filename)
 
+
+
+
+
+
+
+
+
+
+
         def seed_demo_data():
     '''
     Wipes and resets database and inserts 5 habits(daily/weekly/monthly)

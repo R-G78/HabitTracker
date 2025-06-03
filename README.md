@@ -1,6 +1,6 @@
 
 
-# Stoic Habit Tracker
+# Stoics - Habit Tracker
 
 A minimalist CLI habit tracker inspired by Stoic philosophy — designed to help you build consistency, reflect on discipline, and master your daily and weekly rituals.
 

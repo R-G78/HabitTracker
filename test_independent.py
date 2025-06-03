@@ -1,6 +1,6 @@
 import os
 import pytest 
-from db import get_db, create_tables, add_habit, add_completion, get_completions
+from db import get_db, create_tables, add_habit, add_completion, get_completions, reset_database
 from counter import Habit
 from datetime import datetime, timedelta
 import random
@@ -62,11 +62,8 @@ def test_create_increment_delete(temp_db):
 
 @pytest.fixture
 def temp_db_setup(temp_db):
-    """Setup temporary data for testing."""
-    """Sets up a fresh habits.db with 5 habits and 4 months of checkoffs."""
-   
+    """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
     db = temp_db
-    
 
     habits = [
         ("Drink Water", "daily"),
@@ -74,7 +71,6 @@ def temp_db_setup(temp_db):
         ("Meditate", "daily"),
         ("Clean Room", "weekly"),
         ("Pay Bills", "monthly")
-        
     ]
 
     habit_ids = {}
@@ -83,32 +79,48 @@ def temp_db_setup(temp_db):
         habit_id = db.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
         habit_ids[name] = habit_id
 
-    start_date = datetime.now() - timedelta(days=120)
-    for offset in range(28):
-        current_date = start_date + timedelta(days=offset)
-        date_str = current_date.strftime("%Y-%m-%d")
-        for name, periodicity in habits:
-            habit_id = habit_ids[name]
+    start_date = (datetime.now() - timedelta(days=28)).date()
+    today = datetime.now().date()
 
-            # Introduce intentional breaks
-            if name == "Drink Water" :  
-                add_completion(db, habit_id, date_str)
+    # Special handling: "Drink Water" gets perfect streak
+    habit_id = habit_ids["Drink Water"]
+    current_date = start_date
+    while current_date <= today:
+        add_completion(db, habit_id, current_date.isoformat())
+        print(f"Drink Water (perfect streak) on {current_date}")
+        current_date += timedelta(days=1)
+    
 
-            elif name == "Workout" and current_date.weekday() == 6 and offset % 14 != 0:  # Skip every 2nd Sunday
-                add_completion(db, habit_id, date_str)
+    # Other habits: realistic, imperfect streaks
+    for name, periodicity in habits:
+        if name == "Drink Water":
+            continue  # Already handled
 
-            elif name == "Meditate" and offset % 8 != 0:  # Skip every 8th day
-                add_completion(db, habit_id, date_str)
+        habit_id = habit_ids[name]
+        current_date = start_date
 
-            elif name == "Clean Room" and current_date.weekday() == 6 and offset % 21 != 0:
-                add_completion(db, habit_id, date_str)
+        if periodicity == "daily":
+            while current_date <= today:
+                if random.random() > 0.1: #
+                    add_completion(db, habit_id, current_date.isoformat())
+                    print(f"{name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=1)
 
-            elif name == "Pay Bills" and current_date.day == 1:
-                add_completion(db, habit_id, date_str)
+        elif periodicity == "weekly":
+            current_date += timedelta(days=(6 - current_date.weekday()) % 7)  # next Sunday
+            while current_date <= today:
+                if random.random() > 0.2:
+                    add_completion(db, habit_id, current_date.isoformat())
+                    print(f"{name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=7)
 
+        elif periodicity == "monthly":
+            while current_date <= today:
+                add_completion(db, habit_id, current_date.isoformat())
+                print(f" {name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=28)
 
     return db
-
 
 def test_increment_constraints(temp_db_setup):
     """Test that checking off a habit on the same day or in the same week/month is not allowed."""
@@ -126,11 +138,12 @@ def test_increment_constraints(temp_db_setup):
     weekly_habit = db.execute("SELECT id FROM habits WHERE periodicity = 'weekly'").fetchone()[0]
     weekly_date = db.execute("SELECT completion_date FROM completions WHERE habit_id = ?", (weekly_habit,)).fetchone()[0]
     week_date_obj = datetime.strptime(weekly_date, "%Y-%m-%d")
-    same_week_date = (week_date_obj + timedelta(days=2)).strftime("%Y-%m-%d")
+    same_week_date = (week_date_obj + timedelta(days=6)).strftime("%Y-%m-%d")
 
     # Try to check off again in the same week
     result = add_completion(db, weekly_habit, same_week_date)
     assert not result, "Should not allow checking off a weekly habit in the same week again."
+    
     # Check if the completion was not added
     completions = db.execute("SELECT * FROM completions WHERE habit_id = ? AND completion_date = ?", (weekly_habit, same_week_date)).fetchall()
     
@@ -143,6 +156,9 @@ def test_increment_constraints(temp_db_setup):
 
     # Try to check off again in the same month
     result = add_completion(db, monthly_habit, same_month_date)
+    print(f"Weekly habit ID: {weekly_habit}, weekly_date: {weekly_date}, same_week_date: {same_week_date}")
+    print("Weekly result (should be False):", result)
+    print("Weekly completions on attempted date:", completions)
     assert not result, "Should not allow checking off a monthly habit in the same month again."
     
 
@@ -167,9 +183,10 @@ def test_analyse_all_habit(temp_db_setup):
         max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
         print(f"Max streak for '{task}': {max_streak}")
         if max_streak > 0:
-            print(f"  ➤ Start date: {start_date}")
-            print(f"  ➤ End date: {end_date}")
-        print(f"Number of streak breaks: {breaks}")
+            print ("Which:")
+            print(f"  ➤ Started on date: {start_date}")
+            print(f"  ➤ Ended on date: {end_date}")
+        print(f"Number of streak breaks: {breaks}\n")
 
         assert isinstance(max_streak, int)
         assert isinstance(breaks, int)

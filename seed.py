@@ -24,9 +24,9 @@ def seed_demo_data():
 
     # Predefined habits
     habits = [
-        ("Drink Water", "daily"),           # Frequent habit
-        ("Workout", "weekly"),              # Normal habit
-        ("Read Stoicism", "daily"),         # This one will have NO breaks
+        ("Drink Water", "daily"),           
+        ("Workout", "weekly"),             
+        ("Read Stoicism", "daily"),         
         ("Clean Room", "weekly"),           
         ("Pay Bills", "monthly")
     ]
@@ -42,7 +42,7 @@ def seed_demo_data():
 
     # Generate completions
     for name, period in habits:
-        habit_id = habit_ids[name]
+        habit_id = habit_ids[name] 
         start_date = today - timedelta(days=120)
 
         completions = []
@@ -74,5 +74,5 @@ def seed_demo_data():
                 current += timedelta(days=30)
 
         for date in completions:
-            add_completion(habit_id, date)
-            print("✅ Demo data seeded successfully.")
+            add_completion(db, habit_id)
+            print(f"Demo data seeded successfully for {habit_id}.")

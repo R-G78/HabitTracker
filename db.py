@@ -77,12 +77,14 @@ def add_completion(db, habit_id: int, completion_date: str = None):
     if not row:
         print("Habit not found.")
         return
-
+    
     habit_name = row[1]
+    periodicity = get_periodicity(habit_name)
+    
     verify = check_last_completion(db, habit_name)
 
     if not verify:
-        print("Habit already checked for the periodicity")
+        print(f"\nHabit {habit_name} already checked for {periodicity} on ")
         return
     else:
         cur.execute(
@@ -92,7 +94,7 @@ def add_completion(db, habit_id: int, completion_date: str = None):
         db.commit()
         print (f"Habit checked for the period")
 
-def check_last_completion(db, habit_name):
+def check_last_completion(db, habit_name, last_completion_date=None):
     """
     Compares the last completion date of a habit with the current date
     and returns whether the habit can be checked off again based on its periodicity.
@@ -147,7 +149,7 @@ def check_last_completion(db, habit_name):
 
     if periodicity == "daily":
         if last_completion_date == today:
-            return False 
+            return False
         else :
             return True
     elif periodicity == "weekly": 

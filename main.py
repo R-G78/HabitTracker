@@ -7,6 +7,8 @@ from seed import seed_demo_data
 
 def cli():
     
+
+    
     print("\n Welcome to the Habit Tracker\n")
     db = get_db()  # Connect to the SQLite database
 
