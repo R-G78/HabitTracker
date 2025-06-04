@@ -27,8 +27,14 @@ def cli():
         print("Demo data loaded. You're good to go!\n")
 
     elif choice == "Clear database and start fresh":
-        reset_database(db)
-        print("Database cleared. You can now create your own habits.\n")
+        confirm = questionary.confirm(
+            "Are you sure you want to clear the database? This will delete all existing habits and completions."
+        ).ask()
+        if confirm:
+            reset_database(db)
+            print("Database cleared. You can now create your own habits.\n")
+        else:
+            print("Database not cleared. Continuing with existing data.\n")
 
     elif choice == "Continue with existing data":
         print("Continuing with existing data. You can manage your habits.\n")
@@ -153,7 +159,10 @@ def cli():
                         print(f"Habit ID '{selected_habit_id}' not found.")
                         continue
                     completion_dates = get_completions(db, selected_habit_id)
+                    
+                    periodicity = get_periodicity(selected_habit_id)
 
+                    
                     habit = Habit(habit_data['name'], habit_data['periodicity'], habit_data['creation_date'], completion_dates)
                     max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
 

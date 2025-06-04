@@ -19,60 +19,62 @@ def seed_demo_data():
     db = get_db()
     cursor = db.cursor()
 
-    reset_database(db)  # Clears and recreates tables
-    today = datetime.today().date()
+    """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
+  
 
-    # Predefined habits
     habits = [
-        ("Drink Water", "daily"),           
-        ("Workout", "weekly"),             
-        ("Read Stoicism", "daily"),         
-        ("Clean Room", "weekly"),           
+        ("Drink Water", "daily"),
+        ("Workout", "weekly"),
+        ("Meditate", "daily"),
+        ("Clean Room", "weekly"),
         ("Pay Bills", "monthly")
     ]
 
-
     habit_ids = {}
-
-   # Add habits
     for name, periodicity in habits:
         add_habit(db, name, periodicity)
-        habit_id = cursor.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
+        habit_id = db.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
         habit_ids[name] = habit_id
 
-    # Generate completions
-    for name, period in habits:
-        habit_id = habit_ids[name] 
-        start_date = today - timedelta(days=120)
+    start_date = (datetime.now() - timedelta(days=28)).date()
+    today = datetime.now().date()
 
-        completions = []
+    # Special handling: "Drink Water" gets perfect streak
+    habit_id = habit_ids["Drink Water"]
+    current_date = start_date
+    while current_date <= today:
+        add_completion(db, habit_id, current_date.isoformat())
+        print(f"Drink Water (perfect streak) on {current_date}")
+        current_date += timedelta(days=1)
+    
 
-        if name == "Read Stoicism":
-            # Clean daily streak for testing
-            for i in range(30):
-                completions.append((start_date + timedelta(days=i)).isoformat())
+    # Other habits: realistic, imperfect streaks
+    for name, periodicity in habits:
+        if name == "Drink Water":
+            continue  # Already handled
 
-        elif period == "daily":
-            current = start_date
-            while current <= today:
-                if random.random() > 0.1:  # ~90% completion rate
-                    completions.append(current.isoformat())
-                current += timedelta(days=1)
+        habit_id = habit_ids[name]
+        current_date = start_date
 
-        elif period == "weekly":
-            current = start_date
-            while current <= today:
-                if random.random() > 0.2:  # ~80% completion rate
-                    completions.append(current.isoformat())
-                current += timedelta(days=7)
+        if periodicity == "daily":
+            while current_date <= today:
+                if random.random() > 0.1: #
+                    add_completion(db, habit_id, current_date.isoformat())
+                    print(f"{name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=1)
 
-        elif period == "monthly":
-            current = start_date
-            while current <= today:
-                if random.random() > 0.3:  # ~70% completion rate
-                    completions.append(current.isoformat())
-                current += timedelta(days=30)
+        elif periodicity == "weekly":
+            current_date += timedelta(days=(6 - current_date.weekday()) % 7)  # next Sunday
+            while current_date <= today:
+                if random.random() > 0.2:
+                    add_completion(db, habit_id, current_date.isoformat())
+                    print(f"{name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=7)
 
-        for date in completions:
-            add_completion(db, habit_id)
-            print(f"Demo data seeded successfully for {habit_id}.")
+        elif periodicity == "monthly":
+            while current_date <= today:
+                add_completion(db, habit_id, current_date.isoformat())
+                print(f" {name} on {current_date} for periodicity {periodicity}")
+                current_date += timedelta(days=28)
+
+    return db

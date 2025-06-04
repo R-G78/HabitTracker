@@ -58,7 +58,7 @@ def add_habit(db, task: str, periodicity: str):
 
 def add_completion(db, habit_id: int, completion_date: str = None):
     """
-    Add a completion date for a habit.
+    Add a completion date for a habit and update streak count if necessary.
 
     :param db: The database connection.
     :param habit_id: The ID of the habit.
@@ -165,23 +165,23 @@ def check_last_completion(db, habit_name, last_completion_date=None):
 
 def get_habit_data(db, habit_identifier):
     """
-    Retrieve a habit's name, periodicity, and last completion date.
+    Retrieve a habit's name, periodicity, current_streak and last completion date.
 
     :param db: SQLite DB connection
     :param habit_identifier: Either the habit name (str) or ID (int)
-    :return: dict with name, periodicity, and last completion date
+    :return: dict with name, periodicity, current_streak and last completion date
     """
     cur = db.cursor()
     if isinstance(habit_identifier, int):
-        cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE id = ?", (habit_identifier,))
+        cur.execute("SELECT id, task, periodicity, creation_date, streak FROM habits WHERE id = ?", (habit_identifier,))
     else:
-        cur.execute("SELECT id, task, periodicity, creation_date FROM habits WHERE task = ?", (habit_identifier,))
+        cur.execute("SELECT id, task, periodicity, creation_date, streak FROM habits WHERE task = ?", (habit_identifier,))
 
     habit = cur.fetchone()
     if not habit:
         return {"error": "Habit not found."}
 
-    habit_id, task, periodicity, creation_date = habit
+    habit_id, task, periodicity, creation_date, streak = habit
 
     # Get last completion date
     cur.execute(
@@ -195,6 +195,7 @@ def get_habit_data(db, habit_identifier):
         "id": habit_id,
         "name": task,
         "periodicity": periodicity,
+        "current_streak": streak,
         "creation_date": creation_date,
         "last_completion_date": last_completion
     }
@@ -363,3 +364,4 @@ def add_streak_column_if_missing(db):
 
 
 #add_streak_column_if_missing(get_db())
+
