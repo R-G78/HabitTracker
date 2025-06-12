@@ -1,8 +1,8 @@
 
 import questionary
-from db import get_db, add_habit, add_completion, get_all_habits, get_completions, get_habit_data, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity, reset_database 
+from db import get_db, add_habit, add_completion, get_all_habits, get_completions, get_habit_data, delete_habit, get_greatest_overall_streak, get_max_streak_ofHabit, get_periodicity, reset_database , calculate_this_streak
 from counter import Habit
-from analyse import calculate_streak, calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
+from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
 from seed import seed_demo_data
 
 def cli():
@@ -172,16 +172,18 @@ def cli():
                         print(f"  ➤ End date: {end_date}")
                     print(f"Number of streak breaks: {breaks}\n")
 
-                    for completion_date in completion_dates:
-                        print(f"Completion date: {completion_date}")
+        
+                    #Calculate streak
+                    streak = calculate_this_streak(completion_dates, periodicity)
+                    print(f"Longest streak: {streak} days")
 
                     # Current streak
-                    result = habit.calculate_current_streak()
-                    if result == 0:
-                        print("No current streak.")
-                    else:
-                        current_streak, start_date = result
-                        print(f"Current streak: {current_streak} (since {start_date})")
+                   # result = habit.calculate_current_streak()
+                   # if result == 0:
+                       #print("No current streak.")
+                   # else:
+                       # current_streak, start_date = result
+                       # print(f"Current streak: {current_streak} (since {start_date})")
             
             elif choices == "Analyze all habits":
                 choice = questionary.select(

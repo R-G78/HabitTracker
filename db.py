@@ -84,7 +84,7 @@ def add_completion(db, habit_id: int, completion_date: str = None):
     verify = check_last_completion(db, habit_name)
 
     if not verify:
-        print(f"\nHabit {habit_name} already checked for {periodicity} on ")
+        print(f"\nHabit {habit_name} already checked for {periodicity} ")
         return
     else:
         cur.execute(
@@ -201,6 +201,33 @@ def get_habit_data(db, habit_identifier):
     }
    
 
+#Deepseek
+def calculate_this_streak(completion_dates, periodicity):
+    if not completion_dates:
+        return 0
+    
+    # Convert strings to datetime objects and sort
+    dates = sorted([datetime.strptime(d, "%Y-%m-%d").date() for d in completion_dates])
+    streak = 1  # At least 1 if there's one entry
+    
+    for i in range(1, len(dates)):
+        prev_date = dates[i-1]
+        current_date = dates[i]
+        
+        if periodicity == "daily":
+            expected_date = prev_date + timedelta(days=1)
+        elif periodicity == "weekly":
+            expected_date = prev_date + timedelta(weeks=1)
+        elif periodicity == "monthly":
+            # Approximate 30 days (or use calendar month logic)
+            expected_date = prev_date + timedelta(days=30)
+        
+        if current_date == expected_date:
+            streak += 1
+        else:
+            streak = 1  # Reset streak if gap detected
+    
+    return streak
 
 
 

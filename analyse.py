@@ -67,35 +67,35 @@ def get_longest_streak_habit(db, habit_id):
     return cur.fetchone()
 
 
-def calculate_streak(completions):
+    #def calculate_streak(completions):
 
-    """
-    Calculate the longest streak of consecutive completions.
-    :param completions: List of completion dates (strings in 'YYYY-MM-DD' format).
-    :return: Longest streak in days.
-    """
-    if not completions:
-        return 0
+      #  """
+       # Calculate the longest streak of consecutive completions.
+       # :param completions: List of completion dates (strings in 'YYYY-MM-DD' format).
+       # :return: Longest streak in days.
+       # """
+       # if not completions:
+           # return 0
 
-    # Sort the completions in ascending order
-    completions_sorted = sorted(completions)
+        # Sort the completions in ascending order
+       # completions_sorted = sorted(completions)
 
-    longest_streak = 1
-    current_streak = 1
+       # longest_streak = 1
+        #current_streak = 1
 
-    for i in range(1, len(completions_sorted)):
-        prev_date = datetime.strptime(completions_sorted[i - 1], "%Y-%m-%d")
-        curr_date = datetime.strptime(completions_sorted[i], "%Y-%m-%d")
+       # for i in range(1, len(completions_sorted)):
+            #prev_date = datetime.strptime(completions_sorted[i - 1], "%Y-%m-%d")
+            #curr_date = datetime.strptime(completions_sorted[i], "%Y-%m-%d")
 
-        # Check if the current date is exactly one day after the previous date
-        if curr_date == prev_date + timedelta(days=1):
-            current_streak += 1
-            if current_streak > longest_streak:
-                longest_streak = current_streak
-        else:
-            current_streak = 1
+            # Check if the current date is exactly one day after the previous date
+           # if curr_date == prev_date + timedelta(days=1):
+               # current_streak += 1
+               # if current_streak > longest_streak:
+                  #  longest_streak = current_streak
+        #    else:
+              #  current_streak = 1
 
-    return longest_streak
+       # return longest_streak
 
 def calculate_current_streak(self):
     """Calculate the current ongoing streak for the habit."""

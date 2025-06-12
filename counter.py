@@ -58,15 +58,15 @@ class Habit:
             previous_date = datetime.strptime(sorted_dates[i - 1], "%Y-%m-%d").date()
 
             if self.periodicity == "daily":
-                expected_previous = current_date - timedelta(days=1)
+                is_continuous = current_date == previous_date + timedelta(days=1)
             elif self.periodicity == "weekly":
-                expected_previous = current_date - timedelta(weeks=1)
+                is_continuous = 6 <= (current_date - previous_date).days <= 8
             elif self.periodicity == "monthly":
-                expected_previous = previous_date + timedelta(days=30)
+                is_continuous = 28 <= (current_date - previous_date).days <= 31
             else:
                 raise ValueError(f"Unsupported periodicity: {self.periodicity}")
 
-            if previous_date == expected_previous:
+            if is_continuous:
                 current_streak += 1
             else:
                 # Break occurred
@@ -88,42 +88,39 @@ class Habit:
     
     def calculate_current_streak(self):
         """Calculate the current ongoing streak for the habit."""
+    
         if not self.completion_dates:
             return 0
 
-        # Convert dates to datetime.date objects and sort
         sorted_dates = sorted(
             [datetime.strptime(d, "%Y-%m-%d").date() for d in self.completion_dates]
         )
-        
+
+        today = datetime.today().date()
+        last_date = sorted_dates[-1]
+
+        # Check if the last completion is within the allowed "current" window
+        if self.periodicity == "daily" and (today - last_date).days > 1:
+            return 0
+        elif self.periodicity == "weekly" and (today - last_date).days > 7:
+            return 0
+        elif self.periodicity == "monthly" and (today.month != last_date.month or today.year != last_date.year):
+            return 0
+
+        # Start counting backwards for streak
         streak = 1
-        streak_start = sorted_dates[0]
-        last_valid_date = sorted_dates[0]
-
-        for i in range(1, len(sorted_dates)):
-            current_date = sorted_dates[i]
-
-            delta = (current_date - last_valid_date).days
+        for i in range(len(sorted_dates) - 2, -1, -1):
+            current = sorted_dates[i]
+            next_date = sorted_dates[i + 1]
+            delta = (next_date - current).days
 
             if self.periodicity == "daily" and delta == 1:
                 streak += 1
-            elif self.periodicity == "weekly" and 1 <= delta <= 7:
+            elif self.periodicity == "weekly" and 6 <= delta <= 8:
                 streak += 1
             elif self.periodicity == "monthly" and 28 <= delta <= 31:
                 streak += 1
             else:
-                streak = 1
-                last_valid_date = current_date
+                break
 
-        # Check if the current streak is still ongoing
-        today = datetime.today().date()
-        if self.periodicity == "daily" and (today - last_valid_date).days > 1:
-            return 0
-        elif self.periodicity == "weekly" and (today - last_valid_date).days > 7:
-            return 0
-        elif self.periodicity == "monthly" and (today.month != last_valid_date.month or today.year != last_valid_date.year):
-            return 0
-
-        return streak, streak_start.strftime("%Y-%m-%d")
-
-   
+        return streak, sorted_dates[-streak].strftime("%Y-%m-%d")
