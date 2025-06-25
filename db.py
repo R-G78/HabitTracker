@@ -1,6 +1,5 @@
 import sqlite3
 from datetime import datetime, timedelta 
-import questionary
 
 
 def get_db(name="my_database.db"):
@@ -79,7 +78,11 @@ def add_completion(db, habit_id: int, completion_date: str = None):
         return
     
     habit_name = row[1]
-    periodicity = get_periodicity(habit_name)
+    habit_data = get_habit_data(db, habit_name)
+    if not habit_data:
+        print(f"Habit '{habit_name}' not found.")
+        return
+    periodicity = habit_data['periodicity']
     
     verify = check_last_completion(db, habit_name)
 
@@ -201,37 +204,6 @@ def get_habit_data(db, habit_identifier):
     }
    
 
-#Deepseek
-def calculate_this_streak(completion_dates, periodicity):
-    if not completion_dates:
-        return 0
-    
-    # Convert strings to datetime objects and sort
-    dates = sorted([datetime.strptime(d, "%Y-%m-%d").date() for d in completion_dates])
-    streak = 1  # At least 1 if there's one entry
-    
-    for i in range(1, len(dates)):
-        prev_date = dates[i-1]
-        current_date = dates[i]
-        
-        if periodicity == "daily":
-            expected_date = prev_date + timedelta(days=1)
-        elif periodicity == "weekly":
-            expected_date = prev_date + timedelta(weeks=1)
-        elif periodicity == "monthly":
-            # Approximate 30 days (or use calendar month logic)
-            expected_date = prev_date + timedelta(days=30)
-        
-        if current_date == expected_date:
-            streak += 1
-        else:
-            streak = 1  # Reset streak if gap detected
-    
-    return streak
-
-
-
-
 
 def get_all_habits(db):
     """
@@ -257,96 +229,6 @@ def get_completions(db, habit_id: int):
     return [row[0] for row in cur.fetchall()]
 
 
-
-
-def get_periodicity(habit_name):
-    """
-    Retrieve a habit's periodicity from the database.
-    Returns the periodicity or None if the habit doesn't exist.
-    """
-    conn = get_db()
-
-    cursor = conn.execute(
-        "SELECT periodicity FROM habits WHERE task = ?",
-        (habit_name,)
-    )
-    row = cursor.fetchone()
-    if row:
-        return {"periodicity": row[0]}
-    return None
-
-def get_longest_overall_streak(db):
-    """
-    Retrieve the longest streak across all habits.
-    """
-    cur = db.cursor()
-    cur.execute("SELECT MAX(streak) FROM completions")
-    return cur.fetchone()
-
-def get_max_streak_ofHabit( completions, periodicity):
-   
-    if not completions:
-        return 0, None, None, 0
-
-    sorted_dates = sorted(datetime.strptime(d, "%Y-%m-%d").date() for d in completions)
-    max_streak = streak = 0
-    breaks = 0
-
-    start_date = current_start = sorted_dates[0]
-    end_date = sorted_dates[0]
-
-    for i in range(1, len(sorted_dates)):
-        expected = timedelta(days=1) if periodicity == "daily" else timedelta(weeks=1)
-        if sorted_dates[i] - sorted_dates[i - 1] == expected:
-            streak += 1
-            end_date = sorted_dates[i]
-        else:
-            breaks += 1
-            if streak > max_streak:
-                max_streak = streak
-                start_date = current_start
-                end_date = sorted_dates[i - 1]
-            streak = 1
-            current_start = sorted_dates[i]
-
-    # Final check after loop
-    if streak > max_streak:
-        max_streak = streak
-        start_date = current_start
-        end_date = sorted_dates[-1]
-
-    return max_streak, start_date, end_date, breaks
-
-def get_greatest_overall_streak(db):
-    habits = get_all_habits(db)
-    best_streak = 0
-    best_habit = None
-    best_start = None
-    best_end = None
-    best_breaks = 0
-
-    for habit in habits:
-        habit_id = habit[0]
-        name = habit[1]
-        periodicity = habit[2]
-
-        completions = get_completions(db, habit_id)
-        streak, start, end, breaks = get_max_streak_ofHabit(completions, periodicity)
-        
-        if streak > best_streak:
-            best_streak = streak
-            best_habit = name
-            best_start = start
-            best_end = end
-            best_breaks = breaks
-
-    return {
-        "habit": best_habit,
-        "streak": best_streak,
-        "start_date": best_start,
-        "end_date": best_end,
-        "breaks": best_breaks
-    }
 
 def delete_habit(habit_id):
 
@@ -375,11 +257,6 @@ def reset_database(db):
 
 
 
-
-
-#reset_database(get_db())
-
-
 def add_streak_column_if_missing(db):
     cursor = db.cursor()
     # Check if 'streak' column exists
@@ -390,5 +267,4 @@ def add_streak_column_if_missing(db):
         db.commit()
 
 
-#add_streak_column_if_missing(get_db())
 

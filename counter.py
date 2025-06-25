@@ -13,8 +13,7 @@ class Habit:
         self.completion_dates = completion_dates  # List of dates when the habit was checked off
 
     def store(self):
-        """Store the habit in the database."""
-        # This method should implement the logic to store the habit in a database
+        """Stores a new habit in the database."""
         db = get_db()
         add_habit(db, self.task, self.periodicity)
         
