@@ -10,8 +10,7 @@ def cli():
 
     
     print("\n Welcome to the Habit Tracker\n")
-    db = get_db()  # Connect to the SQLite database
-
+    db = get_db()  
     choice = questionary.select(
         "Would you like to start with demo data or a clean slate?",
         choices=[
