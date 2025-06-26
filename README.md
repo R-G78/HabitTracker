@@ -58,9 +58,9 @@ All data is stored locally in habits.db.
 ### Predefined Habits
 
 To get started quickly, the app can load 5 predefined habits. These include:
-	•	✅ Daily habits (e.g., Drink water)
-	•	✅ Weekly habits (e.g., Workout)
-	•	✅ Monthly habits (e.g., Pay bills)
+	•	Daily habits (e.g., Drink water)
+	•	Weekly habits (e.g., Workout)
+	•	Monthly habits (e.g., Pay bills)
 
 If you want to preload these habits into your database (for demo or testing), you can run:
 
