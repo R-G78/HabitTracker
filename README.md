@@ -47,6 +47,7 @@ To start the app, run:
 `python main.py` 
 
 You’ll be guided through the available actions via an interactive menu:
+
 	•	Add new habits
 	•	Check off habits
 	•	Analyse progress
@@ -58,6 +59,7 @@ All data is stored locally in habits.db.
 ### Predefined Habits
 
 To get started quickly, the app can load 5 predefined habits. These include:
+
 	•	Daily habits (e.g., Drink water)
 	•	Weekly habits (e.g., Workout)
 	•	Monthly habits (e.g., Pay bills)
@@ -74,6 +76,7 @@ To add your own custom habit:
 	1.	Run python main.py
 	2.	Select “Add a new habit”
 	3.	Enter:
+ 
 		•	The name of the habit (e.g., “Read 10 pages”)
 		•	The periodicity:
 		•	daily
@@ -83,11 +86,13 @@ To add your own custom habit:
 ### Checking Off a Habit
 
 To mark a habit as completed:
+
 	1.	Run python main.py
 	2.	Select “Check off a habit”
 	3.	Pick the habit you want to complete
 
 The app enforces frequency rules:
+
 	•	Daily habits can only be checked off once per day
 	•	Weekly habits only once per week
 	•	Monthly habits only once per calendar month
@@ -97,6 +102,7 @@ If you try to check off a habit again in the same period, the system will preven
 ### Analysis
 
 You can also:
+
 	•	Analyze specific habits
 	•	View longest streaks
 	•	Identify how often you broke your streak
@@ -113,6 +119,7 @@ To run all tests:
 `pytest` 
 
 Tests use a temporary in-memory database and cover:
+
 	•	Habit creation and deletion
 	•	Completion constraints (e.g., no double-checks in same period)
 	•	Streak calculations
