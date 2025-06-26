@@ -38,7 +38,7 @@ It’s not about tracking everything, it’s about tracking what matters — and
 
 	2.	Install dependencies:
 
-`pip install -r requirements.txt`
+`pip install -r requirement.txt`
 
 ## Usage
 

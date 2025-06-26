@@ -1,4 +1,3 @@
-
 import questionary
 from db import get_db, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
 from counter import Habit
