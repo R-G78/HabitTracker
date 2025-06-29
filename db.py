@@ -10,12 +10,14 @@ def get_db(name="my_database.db"):
     :return: A database connection object.
     """
     db = sqlite3.connect(name)
+
     return db
 
-def create_tables(db):
+def create_tables():
     """
     Create the necessary tables in the database.
     """
+    db = get_db()  # Ensure the database is created
     cur = db.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS habits (

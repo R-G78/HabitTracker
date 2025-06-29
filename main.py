@@ -1,5 +1,5 @@
-import questionary
-from db import get_db, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
+import questionary 
+from db import get_db, create_tables, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
 from counter import Habit
 from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
 from seed import seed_demo_data
@@ -7,9 +7,11 @@ from seed import seed_demo_data
 def cli():
     
 
+
     
     print("\n Welcome to the Habit Tracker\n")
-    db = get_db()  
+    db = get_db()  # Connect to the database
+    
     choice = questionary.select(
         "Would you like to start with demo data or a clean slate?",
         choices=[
@@ -20,6 +22,7 @@ def cli():
     ).ask()
 
     if choice == "Use demo data (preloaded habits and completions)":
+        create_tables()
         seed_demo_data()
     
         print("Demo data loaded. You're good to go!\n")
@@ -264,11 +267,49 @@ def cli():
                     
 
                 elif choice == "Longest overall habit streak":
-                    # Get the longest overall streak from the database
-                    result = get_longest_streak_all(db)
-                    print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
-                    print(f"From {result['start_date']} to {result['end_date']}")
-                    print(f" Streaks were broken {result['breaks']} times")
+                    print("\n=== Longest Overall Habit Streak ===")
+                    choice = questionary.select(
+                        "Which periodicity would you like to deal with?",
+                        choices=["daily", "weekly", "monthly"]
+                    ).ask()
+
+                    if choice not in ["daily", "weekly", "monthly"]:
+                        print("Invalid periodicity choice. Please try again.")
+                        continue  
+                     
+                    elif choice == "daily":
+                        print("Analyzing daily habits...")
+                        habits = get_habits_by_periodicity(db, "daily")
+                        for habit in habits:
+                            print(f"Analyzing habit: {habit[1]} ")
+                            result = get_longest_streak_all(db)
+                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
+                            print(f"From {result['start_date']} to {result['end_date']}")
+                            print(f" Streaks were broken {result['breaks']} times")
+                            print()  # Add a newline for better readability
+
+                    elif choice == "weekly":
+                        print("Analyzing weekly habits...")
+                        habits = get_habits_by_periodicity(db, "weekly")
+                        for habit in habits:
+                            print(f"Analyzing habit: {habit[1]}")
+                            result = get_longest_streak_all(db)
+                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
+                            print(f"From {result['start_date']} to {result['end_date']}")
+                            print(f" Streaks were broken {result['breaks']} times")
+                            print()  # Add a newline for better readability
+
+                    elif choice == "monthly":
+                        print("Analyzing monthly habits...")   
+                        habits = get_habits_by_periodicity(db, "monthly")
+                        for habit in habits:    
+                            print(f"Analyzing habit: {habit[1]}")
+                            result = get_longest_streak_all(db)
+                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
+                            print(f"From {result['start_date']} to {result['end_date']}")
+                            print(f" Streaks were broken {result['breaks']} times")
+                            print() 
+
 
 
                 
