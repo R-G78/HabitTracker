@@ -331,7 +331,7 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
     # Basic stats
     total_completions = len(completion_dates)
     all_streaks = calculate_all_streaks(completion_dates, periodicity, creation_date)
-    longest_streak = get_longest_streak_habit(completion_dates, periodicity, creation_date)
+    longest_streak = get_longest_streak_habit(completion_dates, periodicity)
     current_streak = calculate_current_streak(completion_dates, periodicity)
     
     # Calculate success rate if creation date is provided
