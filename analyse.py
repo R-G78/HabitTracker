@@ -321,7 +321,7 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
     if not completion_dates:
         return {
             'total_completions': 0,
-            'longest_streak': get_longest_streak_habit(completion_dates, periodicity, creation_date),
+            'longest_streak': get_longest_streak_habit(completion_dates, periodicity),
             'current_streak': calculate_current_streak(completion_dates, periodicity),
             'all_streaks': [],
             'success_rate': 0.0,
