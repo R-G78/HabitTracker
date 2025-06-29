@@ -1,7 +1,7 @@
 import questionary 
 from db import get_db, create_tables, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
 from counter import Habit
-from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit
+from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_habit, analyze_habit_performance 
 from seed import seed_demo_data
 
 def cli():
@@ -22,10 +22,17 @@ def cli():
     ).ask()
 
     if choice == "Use demo data (preloaded habits and completions)":
-        create_tables()
-        seed_demo_data()
-    
-        print("Demo data loaded. You're good to go!\n")
+        confirm = questionary.confirm(
+            "Are you sure you want to load demo data? This will overwrite any existing habits and completions."
+        ).ask()
+        if not confirm:
+            print("Demo data not loaded. Continuing with existing data.\n")
+            return
+        else:
+            print("Loading demo data...\n")
+            create_tables()
+            seed_demo_data()
+            print("Demo data loaded successfully. You're good to go!\n")
 
     elif choice == "Clear database and start fresh":
         confirm = questionary.confirm(
@@ -38,7 +45,8 @@ def cli():
             print("Database not cleared. Continuing with existing data.\n")
 
     elif choice == "Continue with existing data":
-        print("Continuing with existing data. You can manage your habits.\n")
+        print("You can now continue where you left off\n")
+        print("Happy Tracking!\n")
     
     
     # Main loop for the CLI
@@ -154,6 +162,9 @@ def cli():
                     choices=choices
                 ).ask()
 
+                print(f"\nAnalyzing habit ID: {selected_habit_id}\n")
+                print("This is all you need to know about this habit:\n")
+
                 if selected_habit_id: 
                     habit_data = get_habit_data(db, selected_habit_id) 
                     if not habit_data:
@@ -169,12 +180,25 @@ def cli():
                     )
 
                     completion_dates = get_completions(db, selected_habit_id)
+                    created_date = habit_data['creation_date']
                     periodicity = habit_data['periodicity']
                     
                     if periodicity is None:
                         print(f"Error: Could not find periodicity for habit ID '{selected_habit_id}'")
                         continue
 
+                    total_completions, longest_streak, current_streak, all_streaks, success_rate, days_since_creation = analyze_habit_performance(completion_dates, periodicity, created_date)
+
+                    print(f"Name: {habit_data['name']}")
+                    print(f"Periodicity: {habit_data['periodicity']}")
+                    print(f"Creation Date: {habit_data['creation_date']}")
+                    print(f"Total Completions: {total_completions}")
+                    print(f"Longest Streak: {longest_streak}")
+                    print(f"Current Streak: {current_streak}")
+                    print(f"Success Rate: {success_rate:.2f}%")
+                    print(f"Days Since Creation: {days_since_creation}")
+                    print(f"All Streaks: {all_streaks}")
+                    
                     max_streak, start_date, end_date, breaks = get_longest_streak_habit(completion_dates, periodicity)
 
                     print(f"\nMax streak for '{habit_data['name']}': {max_streak}")
@@ -182,9 +206,8 @@ def cli():
                         print(f"  ➤ Start date: {start_date}")
                         print(f"  ➤ End date: {end_date}")
                     print(f"Number of streak breaks: {breaks}\n")
-
-        
-                    #Calculate streak
+            
+                    #Calculate current streak
                     current_streak_result = calculate_current_streak(completion_dates, periodicity)
                     if current_streak_result == 0:
                         print("No current streak.")
@@ -196,7 +219,7 @@ def cli():
             elif choices == "Analyze all habits":
                 choice = questionary.select(
                     "What would you like to know?",
-                    choices=["Return a list of all currently tracked habits", "Return a list of habits with the same periodicity", "Longest run streak of every Habit", "Longest overall habit streak", "Exit"]
+                    choices=["Return a list of all currently tracked habits", "Return a list of habits with the same periodicity", "Return the longest run streak of every Habit", "Exit"]
                 ).ask ()
 
                 if choice == "Exit":
@@ -266,49 +289,7 @@ def cli():
                         print()  
                     
 
-                elif choice == "Longest overall habit streak":
-                    print("\n=== Longest Overall Habit Streak ===")
-                    choice = questionary.select(
-                        "Which periodicity would you like to deal with?",
-                        choices=["daily", "weekly", "monthly"]
-                    ).ask()
-
-                    if choice not in ["daily", "weekly", "monthly"]:
-                        print("Invalid periodicity choice. Please try again.")
-                        continue  
-                     
-                    elif choice == "daily":
-                        print("Analyzing daily habits...")
-                        habits = get_habits_by_periodicity(db, "daily")
-                        for habit in habits:
-                            print(f"Analyzing habit: {habit[1]} ")
-                            result = get_longest_streak_all(db)
-                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
-                            print(f"From {result['start_date']} to {result['end_date']}")
-                            print(f" Streaks were broken {result['breaks']} times")
-                            print()  # Add a newline for better readability
-
-                    elif choice == "weekly":
-                        print("Analyzing weekly habits...")
-                        habits = get_habits_by_periodicity(db, "weekly")
-                        for habit in habits:
-                            print(f"Analyzing habit: {habit[1]}")
-                            result = get_longest_streak_all(db)
-                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
-                            print(f"From {result['start_date']} to {result['end_date']}")
-                            print(f" Streaks were broken {result['breaks']} times")
-                            print()  # Add a newline for better readability
-
-                    elif choice == "monthly":
-                        print("Analyzing monthly habits...")   
-                        habits = get_habits_by_periodicity(db, "monthly")
-                        for habit in habits:    
-                            print(f"Analyzing habit: {habit[1]}")
-                            result = get_longest_streak_all(db)
-                            print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
-                            print(f"From {result['start_date']} to {result['end_date']}")
-                            print(f" Streaks were broken {result['breaks']} times")
-                            print() 
+                
 
 
 

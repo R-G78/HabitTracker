@@ -312,33 +312,6 @@ def get_longest_streak_habit(completion_dates: List[str], periodicity: str) -> T
         len(streaks) - 1  # breaks = number of separate streaks - 1
     )
 
-def get_longest_streak_all(db) -> Dict:
-    """
-    Get the longest streak across all habits.
-    Returns dict with habit info and streak details.
-    """
-    habits = get_all_habits(db)
-    longest_overall = {'streak': 0, 'habit': None, 'start_date': None, 'end_date': None, 'breaks': 0}
-    
-    for habit in habits:
-        habit_id, habit_name = habit[0], habit[1]
-        habit_data = get_habit_data(db, habit_id)  # Fixed: pass habit_id instead of entire habit tuple
-        
-        completions = get_completions(db, habit_id)
-        periodicity = habit_data['periodicity']
-        
-        max_streak, start_date, end_date, breaks = get_longest_streak_habit(completions, periodicity)
-        
-        if max_streak > longest_overall['streak']:
-            longest_overall = {
-                'streak': max_streak,
-                'habit': habit_name,
-                'start_date': start_date,
-                'end_date': end_date,
-                'breaks': breaks
-            }
-    
-    return longest_overall
 
 def analyze_habit_performance(completion_dates: List[str], periodicity: str, creation_date: str = None) -> Dict:
     """
