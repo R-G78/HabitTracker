@@ -1,7 +1,7 @@
 import questionary 
 from db import get_db, create_tables, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
 from counter import Habit
-from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_habit, analyze_habit_performance 
+from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_habit, analyze_habit_performance, get_longest_streak_all
 from seed import seed_demo_data
 
 def cli():
@@ -219,7 +219,7 @@ def cli():
             elif choices == "Analyze all habits":
                 choice = questionary.select(
                     "What would you like to know?",
-                    choices=["Return a list of all currently tracked habits", "Return a list of habits with the same periodicity", "Return the longest run streak of every Habit", "Exit"]
+                    choices=["Return a list of all currently tracked habits", "Return a list of habits with the same periodicity", "Return the longest run streak of every Habit","Longest overall habit streak", "Exit"]
                 ).ask ()
 
                 if choice == "Exit":
@@ -287,14 +287,20 @@ def cli():
                         else:
                             print("  No completions found")
                         print()  
+
+
+                elif choice == "Longest overall habit streak":
+                    print("\n=== Longest Overall Habit Streak ===")
+                    result = get_longest_streak_all(db)
+                    print(f" Longest streak: {result['streak']} days for '{result['habit']}'")
+                    print(f"From {result['start_date']} to {result['end_date']}")
+                    print(f" Streaks were broken {result['breaks']} times")
+                    print()  # Add a newline for better readability
+
+
+                 
+                     
                     
-
-                
-
-
-
-                
-            
 
 if __name__ == "__main__":
     cli()

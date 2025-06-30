@@ -41,19 +41,33 @@ def create_tables():
 
 def add_habit(db, task: str, periodicity: str):
     """
-    Add a new habit to the database.
-
+    Add a new habit to the database if it doesn't already exist.
     :param db: The database connection.
     :param task: The task or name of the habit.
     :param periodicity: The periodicity of the habit ("daily" or "weekly" or "monthly").
+    :return: True if habit was added, False if it already exists.
     """
-    
     cur = db.cursor()
+    
+    # Check if habit already exists (case-insensitive)
+    cur.execute(
+        "SELECT COUNT(*) FROM habits WHERE LOWER(task) = LOWER(?) AND LOWER(periodicity) = LOWER(?)",
+        (task.strip(), periodicity.strip())
+    )
+    
+    if cur.fetchone()[0] > 0:
+        print(f"Habit '{task}' with {periodicity} periodicity already exists!")
+        return False  # <-- This was missing
+
     cur.execute(
         "INSERT INTO habits (task, periodicity, creation_date) VALUES (?, ?, ?)",
-        (task, periodicity, str(datetime.now().date()))
+        (task.strip(), periodicity.strip(), str(datetime.now().date()))
     )
     db.commit()
+    print(f"Successfully added habit: '{task}' ({periodicity})")
+    return True
+        
+        
 
 #Check off functions
 
