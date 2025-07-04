@@ -8,6 +8,7 @@ def cli():
     
 
 
+
     
     print("\n Welcome to the Habit Tracker\n")
     db = get_db()  # Connect to the database
@@ -68,8 +69,7 @@ def cli():
             ).ask()
             habit = Habit(task, periodicity)
             habit.store()
-            print(f"Habit '{task}' with periodicity {periodicity} bas been created successfully!")
-
+           
         elif choice == "Check Off Habit": 
 
             habits = get_all_habits(db)
@@ -101,7 +101,9 @@ def cli():
                 data['periodicity'], 
                 data['creation_date'], 
                 get_completions(db, habit_id))
+            
             habit.increment()
+            habit.update_current_streak()
 
             
         elif choice == "Delete Habit":

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import sqlite3
-from db import get_db, add_habit, add_completion
+from db import get_db, add_habit, check_habit_exists, add_completion
 
    
 class Habit:
@@ -13,16 +13,27 @@ class Habit:
         self.completion_dates = completion_dates  # List of dates when the habit was checked off
 
     def store(self):
-        """Stores a new habit in the database."""
+        """
+        Stores a new habit in the database.
+        If the habit already exists, it will not be added again.
+        """
         db = get_db()
-        add_habit(db, self.task, self.periodicity)
         
+        check_exists = check_habit_exists(db, self.task, self.periodicity)
+        if check_exists:
+            print(f"Habit '{self.task}' with {self.periodicity} periodicity already exists!")
+            return False  # Habit already exists, do not add again  
+        
+        else:
+            print(f"Adding habit '{self.task}' with {self.periodicity} periodicity.")
+        
+            add_habit(db, self.task, self.periodicity)
+    
     def increment(self):
         """Mark the habit as completed for the current period."""
         db = get_db()
         add_completion(db, self.task, datetime.now().strftime("%Y-%m-%d"))
         self.update_current_streak()
-
 
     def update_current_streak(self):
         """Update the current streak attribute of the habit and sync with the database."""

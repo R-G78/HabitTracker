@@ -39,6 +39,8 @@ def create_tables():
     """)
     db.commit()
 
+#Create habit functions
+
 def add_habit(db, task: str, periodicity: str):
     """
     Add a new habit to the database if it doesn't already exist.
@@ -48,16 +50,6 @@ def add_habit(db, task: str, periodicity: str):
     :return: True if habit was added, False if it already exists.
     """
     cur = db.cursor()
-    
-    # Check if habit already exists (case-insensitive)
-    cur.execute(
-        "SELECT COUNT(*) FROM habits WHERE LOWER(task) = LOWER(?) AND LOWER(periodicity) = LOWER(?)",
-        (task.strip(), periodicity.strip())
-    )
-    
-    if cur.fetchone()[0] > 0:
-        print(f"Habit '{task}' with {periodicity} periodicity already exists!")
-        return False  # <-- This was missing
 
     cur.execute(
         "INSERT INTO habits (task, periodicity, creation_date) VALUES (?, ?, ?)",
@@ -65,9 +57,22 @@ def add_habit(db, task: str, periodicity: str):
     )
     db.commit()
     print(f"Successfully added habit: '{task}' ({periodicity})")
-    return True
-        
-        
+    
+def check_habit_exists(db, task: str, periodicity: str):
+    """
+    Check if a habit already exists in the database.
+
+    :param db: The database connection.
+    :param task: The task or name of the habit.
+    :param periodicity: The periodicity of the habit ("daily", "weekly", "monthly").
+    :return: True if the habit exists, False otherwise.
+    """
+    cur = db.cursor()
+    cur.execute(
+        "SELECT COUNT(*) FROM habits WHERE LOWER(task) = LOWER(?) AND LOWER(periodicity) = LOWER(?)",
+        (task.strip(), periodicity.strip())
+    )
+    return cur.fetchone()[0] > 0
 
 #Check off functions
 
