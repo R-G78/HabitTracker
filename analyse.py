@@ -346,7 +346,7 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
     Returns detailed statistics about the habit.
     """
     if not completion_dates:
-        return 0, 0, 0, [], 0.0, 0
+        return 0, 0, 0, [], 0
     
     # Basic stats
     total_completions = len(completion_dates)
@@ -366,27 +366,12 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
     else:
         current_streak = current_streak_result
     
-    # Calculate success rate if creation date is provided
-    success_rate = 0.0
+    # Calculate days since creation
     days_since_creation = 0
-    
     if creation_date:
         try:
             creation_dt = parse_date(creation_date)
             days_since_creation = (datetime.now() - creation_dt).days
-            
-            # Calculate expected completions based on periodicity
-            if periodicity == 'daily':
-                expected_completions = days_since_creation
-            elif periodicity == 'weekly':
-                expected_completions = days_since_creation // 7
-            elif periodicity == 'monthly':
-                months_since_creation = ((datetime.now().year - creation_dt.year) * 12 +
-                                       datetime.now().month - creation_dt.month)
-                expected_completions = months_since_creation
-            
-            if expected_completions > 0:
-                success_rate = (total_completions / expected_completions) * 100
         except ValueError:
             pass
     
@@ -395,63 +380,6 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
         longest_streak,
         current_streak,
         all_streaks,
-        min(success_rate, 100.0),  # Cap at 100%
         days_since_creation
     )
-    """
-    Comprehensive analysis of a habit's performance.
-    Returns detailed statistics about the habit.
-    """
-    if not completion_dates:
-        return 0, 0, 0, [], 0.0, 0
-    
-    # Basic stats
-    total_completions = len(completion_dates)
-    all_streaks = calculate_all_streaks(completion_dates, periodicity, creation_date)
-    
-    # Get longest streak (extract just the number if it returns a tuple)
-    longest_streak_result = get_longest_streak_habit(completion_dates, periodicity)
-    if isinstance(longest_streak_result, tuple):
-        longest_streak = longest_streak_result[0]  # Get just the streak number
-    else:
-        longest_streak = longest_streak_result
-    
-    # Get current streak (extract just the number if it returns a tuple)
-    current_streak_result = calculate_current_streak(completion_dates, periodicity)
-    if isinstance(current_streak_result, tuple):
-        current_streak = current_streak_result[0]  # Get just the streak number
-    else:
-        current_streak = current_streak_result
-    
-    # Calculate success rate if creation date is provided
-    success_rate = 0.0
-    days_since_creation = 0
-    
-    if creation_date:
-        try:
-            creation_dt = parse_date(creation_date)
-            days_since_creation = (datetime.now() - creation_dt).days
-            
-            # Calculate expected completions based on periodicity
-            if periodicity == 'daily':
-                expected_completions = days_since_creation
-            elif periodicity == 'weekly':
-                expected_completions = days_since_creation // 7
-            elif periodicity == 'monthly':
-                months_since_creation = ((datetime.now().year - creation_dt.year) * 12 +
-                                       datetime.now().month - creation_dt.month)
-                expected_completions = months_since_creation
-            
-            if expected_completions > 0:
-                success_rate = (total_completions / expected_completions) * 100
-        except ValueError:
-            pass
-    
-    return (
-        total_completions,
-        longest_streak,
-        current_streak,
-        all_streaks,
-        min(success_rate, 100.0),  # Cap at 100%
-        days_since_creation
-    )
+   

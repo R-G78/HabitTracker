@@ -1,3 +1,9 @@
+"""
+db.py — Handles all database operations for the habit tracker.
+Requires: sqlite3, datetime, timedelta
+Used by: main.py, analytics.py
+"""
+
 import sqlite3
 from datetime import datetime, timedelta 
 

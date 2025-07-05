@@ -107,7 +107,7 @@ def cli():
 
             
         elif choice == "Delete Habit":
-            all_habits = get_all_habits(db)  # Assume this returns a list of tuples like (id, name, periodicity, date)
+            all_habits = get_all_habits(db)  
 
             if not all_habits:
                 print(" No habits to delete.")
@@ -121,10 +121,19 @@ def cli():
                 for i, habit in enumerate(all_habits, 1)
             ]
 
+            # Add exit option
+            choices.append(questionary.Choice(title="Exit (go back to main menu)", value="exit"))
+                
             habit_to_delete = questionary.select(
                 "Select a habit to delete:",
                 choices=choices
             ).ask()
+
+            # Check if user chose to exit
+            if habit_to_delete == "exit":
+                print("Returning to main menu.")
+                continue
+
             confirm = questionary.confirm(
                 f"Are you sure you want to delete '{habit_to_delete}' and all its data?"
             ).ask()
@@ -189,7 +198,7 @@ def cli():
                         print(f"Error: Could not find periodicity for habit ID '{selected_habit_id}'")
                         continue
 
-                    total_completions, longest_streak, current_streak, all_streaks, success_rate, days_since_creation = analyze_habit_performance(completion_dates, periodicity, created_date)
+                    total_completions, longest_streak, current_streak, all_streaks, days_since_creation = analyze_habit_performance(completion_dates, periodicity, created_date)
 
                     print(f"Name: {habit_data['name']}")
                     print(f"Periodicity: {habit_data['periodicity']}")
@@ -197,9 +206,13 @@ def cli():
                     print(f"Total Completions: {total_completions}")
                     print(f"Longest Streak: {longest_streak}")
                     print(f"Current Streak: {current_streak}")
-                    print(f"Success Rate: {success_rate:.2f}%")
                     print(f"Days Since Creation: {days_since_creation}")
-                    print(f"All Streaks: {all_streaks}")
+                    print("All Streaks:")
+                    if all_streaks:
+                        for i, streak in enumerate(all_streaks, 1):
+                            print(f"  {i}. Start: {streak['start_date']}, End: {streak['end_date']}, Length: {streak['length']}")
+                    else:
+                        print("  No streaks found")
                     
                     max_streak, start_date, end_date, breaks = get_longest_streak_habit(completion_dates, periodicity)
 
@@ -256,7 +269,7 @@ def cli():
                     else:
                         print(f"No habits found with {periodicity} periodicity.")
 
-                elif choice == "Longest run streak of every Habit":
+                elif choice == "Return the longest run streak of every Habit":
                     habits = get_all_habits(db)
                     
                     if not habits:
@@ -289,7 +302,6 @@ def cli():
                         else:
                             print("  No completions found")
                         print()  
-
 
                 elif choice == "Longest overall habit streak":
                     print("\n=== Longest Overall Habit Streak ===")
