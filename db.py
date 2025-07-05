@@ -79,7 +79,7 @@ def check_habit_exists(db, task: str, periodicity: str):
         (task.strip(), periodicity.strip())
     )
     return cur.fetchone()[0] > 0
-
+    
 #Check off functions
 
 def add_completion(db, habit_id: int, completion_date: str = None):

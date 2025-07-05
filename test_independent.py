@@ -1,10 +1,11 @@
 import os
 import pytest 
+from seed import seed_demo_data
 from db import get_db, create_tables, add_habit, add_completion, get_completions, reset_database
 from counter import Habit
 from datetime import datetime, timedelta
 import random
-from analyse import get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit, calculate_streak, calculate_current_streak, get_allHabit_summaries
+from analyse import get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit, calculate_all_streaks, calculate_current_streak, get_allHabit_summaries
 
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def temp_db():
         os.remove(db_filename)
     
     db = get_db(db_filename)
-    create_tables(db)
+    create_tables()
     yield db
 
     db.close()
@@ -40,7 +41,7 @@ def test_create_increment_delete(temp_db):
     assert habit[2] == "daily"
     print ("Test habit exists in the database.")
 
-    # Increment the habitpytest -s test_independent.py
+    # Increment the habit
     habit_id = habit[0]
     add_completion(db, habit_id, datetime.now().strftime("%Y-%m-%d"))
     completions = db.execute("SELECT * FROM completions WHERE habit_id = ?", (habit_id,)).fetchall()
@@ -64,61 +65,7 @@ def test_create_increment_delete(temp_db):
 def temp_db_setup(temp_db):
     """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
     db = temp_db
-
-    habits = [
-        ("Drink Water", "daily"),
-        ("Workout", "weekly"),
-        ("Meditate", "daily"),
-        ("Clean Room", "weekly"),
-        ("Pay Bills", "monthly")
-    ]
-
-    habit_ids = {}
-    for name, periodicity in habits:
-        add_habit(db, name, periodicity)
-        habit_id = db.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
-        habit_ids[name] = habit_id
-
-    start_date = (datetime.now() - timedelta(days=28)).date()
-    today = datetime.now().date()
-
-    # Special handling: "Drink Water" gets perfect streak
-    habit_id = habit_ids["Drink Water"]
-    current_date = start_date
-    while current_date <= today:
-        add_completion(db, habit_id, current_date.isoformat())
-        print(f"Drink Water (perfect streak) on {current_date}")
-        current_date += timedelta(days=1)
-    
-
-    # Other habits: realistic, imperfect streaks
-    for name, periodicity in habits:
-        if name == "Drink Water":
-            continue  # Already handled
-
-        habit_id = habit_ids[name]
-        current_date = start_date
-
-        if periodicity == "daily":
-            while current_date <= today:
-                if random.random() > 0.1: #
-                    add_completion(db, habit_id, current_date.isoformat())
-                    print(f"{name} on {current_date} for periodicity {periodicity}")
-                current_date += timedelta(days=1)
-
-        elif periodicity == "weekly":
-            current_date += timedelta(days=(6 - current_date.weekday()) % 7)  # next Sunday
-            while current_date <= today:
-                if random.random() > 0.2:
-                    add_completion(db, habit_id, current_date.isoformat())
-                    print(f"{name} on {current_date} for periodicity {periodicity}")
-                current_date += timedelta(days=7)
-
-        elif periodicity == "monthly":
-            while current_date <= today:
-                add_completion(db, habit_id, current_date.isoformat())
-                print(f" {name} on {current_date} for periodicity {periodicity}")
-                current_date += timedelta(days=28)
+    seed_demo_data(db)
 
     return db
 

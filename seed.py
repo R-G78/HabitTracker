@@ -5,7 +5,7 @@ from db import get_db, add_habit, add_completion, reset_database
 
 
 
-def seed_demo_data():
+def seed_demo_data(db=None):
     '''
     Wipes and resets database and inserts 5 habits(daily/weekly/monthly)
     Adds  realistic completions (with some randomness)

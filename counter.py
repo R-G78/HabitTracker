@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import sqlite3
 from db import get_db, add_habit, check_habit_exists, add_completion
 
    
@@ -21,7 +20,8 @@ class Habit:
         
         check_exists = check_habit_exists(db, self.task, self.periodicity)
         if check_exists:
-            print(f"Habit '{self.task}' with {self.periodicity} periodicity already exists!")
+            print(f"Habit '{self.task}' with {self.periodicity} periodicity already exists!\n")
+            print("Creation cancelled")
             return False  # Habit already exists, do not add again  
         
         else:

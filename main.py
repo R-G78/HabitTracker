@@ -1,14 +1,24 @@
+"""
+Habit Tracker - Main CLI Module
+
+This module provides the command-line interface for the habit tracking application.
+It handles user interactions, menu navigation, and coordinates between different
+components of the system.
+
+Author: Renee Njiru
+Date: 2025-07-05
+"""
+
+# Third-party imports
 import questionary 
+
+# Local imports 
 from db import get_db, create_tables, get_all_habits, get_completions, get_habit_data, delete_habit, reset_database 
 from counter import Habit
 from analyse import   calculate_current_streak, get_allHabit_summaries, get_habits_by_periodicity, get_longest_streak_habit, analyze_habit_performance, get_longest_streak_all
 from seed import seed_demo_data
 
 def cli():
-    
-
-
-
     
     print("\n Welcome to the Habit Tracker\n")
     db = get_db()  # Connect to the database
