@@ -61,11 +61,11 @@ def test_create_increment_delete(temp_db):
     assert habit is None
     print ("Test habit no longer exists in the database.")
 
-@pytest.fixture
+@pytest.fixture 
 def temp_db_setup(temp_db):
     """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
     db = temp_db
-    seed_demo_data(db)
+    seed_demo_data()
 
     return db
 
@@ -177,72 +177,19 @@ def temp_db():
         os.remove(db_filename)
     
     db = get_db(db_filename)
-    create_tables(db)
+    create_tables()
     yield db
 
     db.close()
     if os.path.exists(db_filename):
         os.remove(db_filename)
 
-
-@pytest.fixture
+@pytest.fixture 
 def seeded_db(temp_db):
     """Fixture that provides a database with seeded demo data."""
     db = temp_db
-    
-    # Manually seed the data similar to seed_demo_data but for our temp db
-    habits = [
-        ("Drink Water", "daily"),
-        ("Workout", "weekly"),
-        ("Meditate", "daily"),
-        ("Clean Room", "weekly"),
-        ("Pay Bills", "monthly")
-    ]
-
-    habit_ids = {}
-    for name, periodicity in habits:
-        add_habit(db, name, periodicity)
-        habit_id = db.execute("SELECT id FROM habits WHERE task = ?", (name,)).fetchone()[0]
-        habit_ids[name] = habit_id
-
-    start_date = (datetime.now() - timedelta(days=28)).date()
-    today = datetime.now().date()
-
-    # Special handling: "Drink Water" gets perfect streak
-    habit_id = habit_ids["Drink Water"]
-    current_date = start_date
-    while current_date <= today:
-        add_completion(db, habit_id, current_date.isoformat())
-        current_date += timedelta(days=1)
-
-    # Other habits: realistic, imperfect streaks
-    for name, periodicity in habits:
-        if name == "Drink Water":
-            continue  # Already handled
-
-        habit_id = habit_ids[name]
-        current_date = start_date
-
-        if periodicity == "daily":
-            while current_date <= today:
-                if random.random() > 0.1:
-                    add_completion(db, habit_id, current_date.isoformat())
-                current_date += timedelta(days=1)
-
-        elif periodicity == "weekly":
-            current_date += timedelta(days=(6 - current_date.weekday()) % 7)  # next Sunday
-            while current_date <= today:
-                if random.random() > 0.2:
-                    add_completion(db, habit_id, current_date.isoformat())
-                current_date += timedelta(days=7)
-
-        elif periodicity == "monthly":
-            while current_date <= today:
-                add_completion(db, habit_id, current_date.isoformat())
-                current_date += timedelta(days=28)
-
+    seed_demo_data()
     return db
-
 
 def test_create_habit_functionality(temp_db):
     """Test creating habits using the Habit class store method."""
