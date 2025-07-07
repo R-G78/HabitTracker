@@ -19,11 +19,15 @@ def get_db(name="my_database.db"):
 
     return db
 
-def create_tables():
+def create_tables(db=None):
     """
     Create the necessary tables in the database.
+    
+    :param db: Optional database connection. If None, uses get_db().
     """
-    db = get_db()  # Ensure the database is created
+    if db is None:
+        db = get_db()  # Use default database for normal operation
+    
     cur = db.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS habits (
@@ -34,7 +38,6 @@ def create_tables():
             streak INTEGER DEFAULT 0
         )
     """)
-    
     cur.execute("""
         CREATE TABLE IF NOT EXISTS completions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +47,6 @@ def create_tables():
         )
     """)
     db.commit()
-
 #Create habit functions
 
 def add_habit(db, task: str, periodicity: str):
@@ -56,6 +58,7 @@ def add_habit(db, task: str, periodicity: str):
     :return: True if habit was added, False if it already exists.
     """
     cur = db.cursor()
+    create_tables(db)  # Ensure tables exist
 
     cur.execute(
         "INSERT INTO habits (task, periodicity, creation_date) VALUES (?, ?, ?)",

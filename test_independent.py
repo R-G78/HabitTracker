@@ -16,7 +16,7 @@ def temp_db():
         os.remove(db_filename)
     
     db = get_db(db_filename)
-    create_tables()
+    create_tables(db)  # Pass the db connection
     yield db
 
     db.close()
@@ -61,14 +61,27 @@ def test_create_increment_delete(temp_db):
     assert habit is None
     print ("Test habit no longer exists in the database.")
 
-@pytest.fixture 
+
+@pytest.fixture
+def temp_db():
+    """Fixture to create a temporary SQLite database for testing."""
+    db_filename = "temp_test.db"
+    if os.path.exists(db_filename):
+        os.remove(db_filename)
+    
+    db = get_db(db_filename)
+    create_tables(db)  # Pass the db connection
+    yield db
+
+    db.close()
+    if os.path.exists(db_filename):
+        os.remove(db_filename)
+        
 def temp_db_setup(temp_db):
     """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
     db = temp_db
-    seed_demo_data()
-
+    seed_demo_data(db)  # Pass the db connection
     return db
-
 def test_increment_constraints(temp_db_setup):
     """Test that checking off a habit on the same day or in the same week/month is not allowed."""
     db = temp_db_setup
@@ -184,11 +197,11 @@ def temp_db():
     if os.path.exists(db_filename):
         os.remove(db_filename)
 
-@pytest.fixture 
+@pytest.fixture
 def seeded_db(temp_db):
     """Fixture that provides a database with seeded demo data."""
     db = temp_db
-    seed_demo_data()
+    seed_demo_data(db)  
     return db
 
 def test_create_habit_functionality(temp_db):

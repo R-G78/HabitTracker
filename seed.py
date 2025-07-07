@@ -1,22 +1,26 @@
 import sqlite3
 from datetime import datetime, timedelta
 import random
-from db import get_db, add_habit, add_completion, reset_database
+from db import get_db, add_habit, add_completion, reset_database, create_tables
 
 
 
-def seed_demo_data():
+def seed_demo_data(db = None):
     '''
     Wipes and resets database and inserts 5 habits(daily/weekly/monthly)
     Adds  realistic completions (with some randomness)
     Ensure “Read Stoicism” has no breaks for clean streak testing
 
-    : param: None
+    : param: db: The database connection. If None, it will use the default get_db() function.
     : return: None
     '''
 
-     # Connect to the SQLite database
-    db = get_db()
+    if db is None:
+        db = get_db()  # Use default database for normal operation
+    
+    # Create tables if they don't exist
+    create_tables(db)
+    
     cursor = db.cursor()
 
     """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
