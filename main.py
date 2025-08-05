@@ -5,7 +5,7 @@ This module provides the command-line interface for the habit tracking applicati
 It handles user interactions, menu navigation, and coordinates between different
 components of the system.
 
-Author: Renee Njiru
+Author: Renee I. Njiru
 Date: 2025-07-05
 """
 

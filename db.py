@@ -5,18 +5,22 @@ Used by: main.py, analytics.py
 """
 
 import sqlite3
+import os
 from datetime import datetime, timedelta 
 
 
-def get_db(name="my_database.db"):
+def get_db(name=None):
     """
     Connect to the SQLite database.
 
     :param name: The name of the database file.
     :return: A database connection object.
     """
+    if name is None:
+        # Check if we're in test mode
+        name = os.getenv('DB_PATH', 'habits.db')  # Default to habits.db
+    
     db = sqlite3.connect(name)
-
     return db
 
 def create_tables(db=None):
@@ -237,14 +241,20 @@ def get_habit_data(db, habit_identifier):
 
 def get_all_habits(db):
     """
-    Retrieve all habits from the database.
+    Retrieve a list of all habits' names from the database.
 
     :param db: The database connection.
     :return: A list of all habits.
     """
     cur = db.cursor()
     cur.execute("SELECT * FROM habits")
-    return cur.fetchall()
+    habits = cur.fetchall()
+    # Convert to a list of dictionaries for easier access
+    habit_list = []
+    for habit in habits:
+        habit_name = habit[1]
+        habit_list.append(habit_name)
+    return habit_list
 
 def get_completions(db, habit_id: int):
     """
@@ -260,7 +270,7 @@ def get_completions(db, habit_id: int):
 
 
 
-def delete_habit(habit_id):
+def delete_habit(habit_name):
 
     """
     Delete a habit and its completion records from the database.
@@ -269,7 +279,7 @@ def delete_habit(habit_id):
     conn = get_db()
     # Assuming habit_name is unique
     # Delete completions associated with the habit
-    conn.execute("DELETE FROM habits WHERE id = ?", (habit_id,))
+    conn.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
     conn.commit()
 
 def reset_database(db):
