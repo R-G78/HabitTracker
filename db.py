@@ -238,8 +238,19 @@ def get_habit_data(db, habit_identifier):
     }
    
 
-
 def get_all_habits(db):
+    """
+    Retrieve a list of all habits from the database.
+
+    :param db: The database connection.
+    :return: A list of all habits as tuples (id, task, periodicity, creation_date, streak).
+    """
+    cur = db.cursor()
+    cur.execute("SELECT * FROM habits")
+    habits = cur.fetchall()
+    return habits 
+
+def get_habits_list(db):
     """
     Retrieve a list of all habits' names from the database.
 

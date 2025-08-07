@@ -99,21 +99,6 @@ def temp_db_close(temp_db):
          os.remove(db_filename)
 
 @pytest.fixture
-def temp2_db():
-    """Fixture to create a temporary SQLite database for testing."""
-    db_filename = "temp_test.db"
-    if os.path.exists(db_filename):
-        os.remove(db_filename)
-    
-    db = get_db("test2_Db.db")
-    reset_database(db)  # Reset the database to a clean state
-    create_tables(db)  # Pass the db connection
-    yield db
-
-    db.close()
-    if os.path.exists(db_filename):
-        os.remove(db_filename)
-
 def temp_db_setup(temp_db):
     """Sets up a fresh habits.db with realistic checkoffs and a perfect streak for 'Drink Water'."""
     db = temp_db
