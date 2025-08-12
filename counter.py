@@ -11,12 +11,11 @@ class Habit:
         self.creation_date = creation_date or str(datetime.now().date())
         self.completion_dates = completion_dates  # List of dates when the habit was checked off
 
-    def store(self):
+    def store(self, db):
         """
         Stores a new habit in the database.
         If the habit already exists, it will not be added again.
         """
-        db = get_db()
         
         check_exists = check_habit_exists(db, self.task, self.periodicity)
         if check_exists:

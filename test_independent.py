@@ -32,24 +32,24 @@ def test_create_habit_functionality(temp_db):
     
     # Test creating daily habit
     habit = Habit("Morning Exercise", "daily")
-    habit.store()
+    habit.store(db)
     
     # Verify habit was created in database
     habits = get_all_habits(db)
     assert len(habits) == 1
-    assert habits[1] == "Morning Exercise"
-    assert habits    [2] == "daily"
+    assert habits[0][1] == "Morning Exercise"
+    assert habits [0][2] == "daily"
     
     # Test creating weekly habit
     habit2 = Habit("Weekly Review", "weekly")
-    habit2.store()
+    habit2.store(db)
     
     habits = get_all_habits(db)
     assert len(habits) == 2
     
     # Test creating monthly habit
     habit3 = Habit("Budget Review", "monthly")
-    habit3.store()
+    habit3.store(db)
     
     habits = get_all_habits(db)
     assert len(habits) == 3
@@ -84,7 +84,7 @@ def test_create_increment_delete(temp_db):
     print ("Test habit incremented successfully.")
 
     # Delete the habit
-    delete_habit("Test Habit")
+    delete_habit(db, "Test Habit")
     print ("Test habit deleted successfully.")
     # Check if the habit is deleted
     habit = db.execute("SELECT * FROM habits WHERE task = 'Test Habit'").fetchone()

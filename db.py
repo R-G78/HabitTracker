@@ -281,17 +281,17 @@ def get_completions(db, habit_id: int):
 
 
 
-def delete_habit(habit_name):
+def delete_habit(db, habit_name):
 
     """
     Delete a habit and its completion records from the database.
     """
     # Delete completions first to avoid foreign key constraint issues
-    conn = get_db()
+   
     # Assuming habit_name is unique
     # Delete completions associated with the habit
-    conn.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
-    conn.commit()
+    db.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
+    db.commit()
 
 def reset_database(db):
     """
