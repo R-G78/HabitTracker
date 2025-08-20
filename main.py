@@ -43,7 +43,8 @@ def cli():
             print("Loading demo data...\n")
             create_tables()
             seed_demo_data()
-            print("Demo data loaded successfully. You're good to go!\n")
+            print("""Demo data loaded successfully.
+                   You're good to go!""")
 
     elif choice == "Clear database and start fresh":
         confirm = questionary.confirm(
@@ -56,14 +57,14 @@ def cli():
             print("Database not cleared. Continuing with existing data.\n")
 
     elif choice == "Continue with existing data":
-        print("You can now continue where you left off\n")
-        print("Happy Tracking!\n")
+        print("""You can now continue where you left off.
+               \nHappy Tracking!""")
     
     
     # Main loop for the CLI
     while True:
         choice = questionary.select(
-            "What do you want to do?",
+            "\nWhat do you want to do?",
             choices=["Create Habit", "Check Off Habit", "Analyze Habits", "Delete Habit", "Exit"]
         ).ask()
 
@@ -73,12 +74,23 @@ def cli():
 
         elif choice == "Create Habit": 
             task = questionary.text("What is the name of your habit?").ask()
-            periodicity = questionary.select(
-                "What is the periodicity of your habit?",
-                choices=["daily", "weekly", "monthly"]
-            ).ask()
+            if not task:
+                print("Habit name cannot be empty. Please try again.")
+                continue
+            
+            while True:
+                
+                periodicity = questionary.select(
+                    "What is the periodicity of your habit?",
+                    choices=["daily", "weekly", "monthly", "Other"]
+                ).ask()
+                if periodicity == "Other":
+                    print("Currently, only daily, weekly, and monthly periodicities are supported.")
+                else: 
+                    break
+
             habit = Habit(task, periodicity)
-            habit.store()
+            habit.store(db)
            
         elif choice == "Check Off Habit": 
 

@@ -21,7 +21,7 @@ class Habit:
         if check_exists:
             print(f"Habit '{self.task}' with {self.periodicity} periodicity already exists!\n")
             print("Creation cancelled")
-            return False  # Habit already exists, do not add again  
+            return False   
         
         else:
             print(f"Adding habit '{self.task}' with {self.periodicity} periodicity.")
