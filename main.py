@@ -34,12 +34,17 @@ def cli():
 
     if choice == "Use demo data (preloaded habits and completions)":
         confirm = questionary.confirm(
-            "Are you sure you want to load demo data? This will overwrite any existing habits and completions."
+            """
+            Are you sure you want to load demo data? 
+            This will overwrite any existing habits and completions.
+            Do you want to proceed?"""
         ).ask()
         if not confirm:
             print("Demo data not loaded. Continuing with existing data.\n")
             return
         else:
+            print ("Clearing database...")
+            reset_database(db)
             print("Loading demo data...\n")
             create_tables()
             seed_demo_data()
