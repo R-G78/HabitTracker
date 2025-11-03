@@ -29,6 +29,8 @@ def seed_demo_data(db = None):
     
     # Create tables if they don't exist
     create_tables(db)
+
+    # Reset the database just in case 
     reset_database(db)
     
     cursor = db.cursor()
@@ -77,7 +79,7 @@ def seed_demo_data(db = None):
 
         if periodicity == "daily":
             while current_date <= today:
-                if random.random() > 0.1: #
+                if random.random() > 0.1: # 90% chance of completion
                     add_completion(db, habit_id, current_date.isoformat())
                     print(f"{name} on {current_date} for periodicity {periodicity}")
                 current_date += timedelta(days=1)
@@ -85,15 +87,16 @@ def seed_demo_data(db = None):
         elif periodicity == "weekly":
             current_date += timedelta(days=(6 - current_date.weekday()) % 7)  # next Sunday
             while current_date <= today:
-                if random.random() > 0.2:
+                if random.random() > 0.2: # 80% chance of completion
                     add_completion(db, habit_id, current_date.isoformat())
                     print(f"{name} on {current_date} for periodicity {periodicity}")
                 current_date += timedelta(days=7)
 
         elif periodicity == "monthly":
-            while current_date <= today:
-                add_completion(db, habit_id, current_date.isoformat())
-                print(f" {name} on {current_date} for periodicity {periodicity}")
+            while current_date <= today: 
+                if random.random() > 0.3: # 70% chance of completion
+                    add_completion(db, habit_id, current_date.isoformat())
+                    print(f" {name} on {current_date} for periodicity {periodicity}")
                 current_date += timedelta(days=28)
 
     return db
