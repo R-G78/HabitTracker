@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta 
 
 
-def get_db(name=None):
+def get_db(name=None):#
     """
     Connect to the SQLite database.
 
@@ -23,7 +23,7 @@ def get_db(name=None):
     db = sqlite3.connect(name)
     return db
 
-def create_tables(db=None):
+def create_tables(db=None):#
     """
     Create the necessary tables in the database.
     
@@ -51,9 +51,9 @@ def create_tables(db=None):
         )
     """)
     db.commit()
-#Create habit functions
 
-def add_habit(db, task: str, periodicity: str):
+#Create habit functions
+def add_habit(db, task: str, periodicity: str):#
     """
     Add a new habit to the database if it doesn't already exist.
     :param db: The database connection.
@@ -63,7 +63,7 @@ def add_habit(db, task: str, periodicity: str):
     """
     cur = db.cursor()
     create_tables(db)  # Ensure tables exist
-
+   
     cur.execute(
         "INSERT INTO habits (task, periodicity, creation_date) VALUES (?, ?, ?)",
         (task.strip(), periodicity.strip(), str(datetime.now().date()))
@@ -71,7 +71,7 @@ def add_habit(db, task: str, periodicity: str):
     db.commit()
     print(f"Successfully added habit: '{task}' ({periodicity})")
     
-def check_habit_exists(db, task: str, periodicity: str):
+def check_habit_exists(db, task: str, periodicity: str):#
     """
     Check if a habit already exists in the database.
 
@@ -89,7 +89,7 @@ def check_habit_exists(db, task: str, periodicity: str):
     
 #Check off functions
 
-def add_completion(db, habit_id: int, completion_date: str = None):
+def add_completion(db, habit_id: int, completion_date: str = None): #
     """
     Add a completion date for a habit and update streak count if necessary.
 
@@ -131,7 +131,7 @@ def add_completion(db, habit_id: int, completion_date: str = None):
         db.commit()
         print (f"Habit checked for the period")
 
-def check_last_completion(db, habit_name, last_completion_date=None):
+def check_last_completion(db, habit_name, last_completion_date=None): #
     """
     Compares the last completion date of a habit with the current date
     and returns whether the habit can be checked off again based on its periodicity.
@@ -200,7 +200,7 @@ def check_last_completion(db, habit_name, last_completion_date=None):
         else:
             return True
 
-def get_habit_data(db, habit_identifier):
+def get_habit_data(db, habit_identifier): #
     """
     Retrieve a habit's name, periodicity, current_streak and last completion date.
 
@@ -238,7 +238,7 @@ def get_habit_data(db, habit_identifier):
     }
    
 
-def get_all_habits(db):
+def get_all_habits(db): #
     """
     Retrieve a list of all habits from the database.
 
@@ -250,7 +250,7 @@ def get_all_habits(db):
     habits = cur.fetchall()
     return habits 
 
-def get_habits_list(db):
+def get_habits_list(db): # i might need to use this
     """
     Retrieve a list of all habits' names from the database.
 
@@ -267,7 +267,7 @@ def get_habits_list(db):
         habit_list.append(habit_name)
     return habit_list
 
-def get_completions(db, habit_id: int):
+def get_completions(db, habit_id: int):#
     """
     Retrieve all completion dates for a specific habit.
 
@@ -281,7 +281,7 @@ def get_completions(db, habit_id: int):
 
 
 
-def delete_habit(db, habit_name):
+def delete_habit(db, habit_name):#
 
     """
     Delete a habit and its completion records from the database.
@@ -293,7 +293,7 @@ def delete_habit(db, habit_name):
     db.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
     db.commit()
 
-def reset_database(db):
+def reset_database(db): #
     """
     Deletes all habits and completions from the database.
     Also resets the ID counters for both tables.
@@ -307,16 +307,6 @@ def reset_database(db):
     db.commit()
     print("Database reset. All habits and completions deleted, ID counters reset.")
 
-
-
-def add_streak_column_if_missing(db):
-    cursor = db.cursor()
-    # Check if 'streak' column exists
-    cursor.execute("PRAGMA table_info(habits)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "streak" not in columns:
-        cursor.execute("ALTER TABLE habits ADD COLUMN streak INTEGER DEFAULT 0")
-        db.commit()
 
 
 

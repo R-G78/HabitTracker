@@ -33,11 +33,15 @@ def cli():
     ).ask()
 
     if choice == "Use demo data (preloaded habits and completions)":
+
+
+    
         confirm = questionary.confirm(
             """
             Are you sure you want to load demo data? 
             This will overwrite any existing habits and completions.
             Do you want to proceed?"""
+
         ).ask()
         if not confirm:
             print("Demo data not loaded. Continuing with existing data.\n")
@@ -90,12 +94,15 @@ def cli():
                     choices=["daily", "weekly", "monthly", "Other"]
                 ).ask()
                 if periodicity == "Other":
-                    print("Currently, only daily, weekly, and monthly periodicities are supported.")
+                    print("\nCurrently, only daily, weekly, and monthly periodicities are supported.")
                 else: 
                     break
 
             habit = Habit(task, periodicity)
             habit.store(db)
+            if habit.store:
+                print("\nYour habit has been created successfully. \nYou can now check it off as you complete it.")
+                
            
         elif choice == "Check Off Habit": 
 
