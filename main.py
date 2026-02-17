@@ -220,6 +220,7 @@ def cli():
                         habit_data['id'],
                         habit_data['name'],
                         habit_data['periodicity'],
+                        habit_data['current_streak'],
                         habit_data['creation_date'],
                         get_completions(db, selected_habit_id)
                     )
