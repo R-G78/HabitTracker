@@ -46,29 +46,43 @@ To start the app, run:
 
 `python main.py` 
 
-You’ll be guided through the available actions via an interactive menu:
+You'll first be guided through an interactive menu on how to interact with the application during the session:
+
+	1.  Use demo data 
+
+		This loads predefined habits to test the application. Please note that this will overwrite any existing habits and completions. 
+
+		The predefined habits include:
+
+		•	Daily habits (e.g., Drink water)
+		•	Weekly habits (e.g., Workout)
+		•	Monthly habits (e.g., Pay bills)
+			
+		If you want to preload these habits into your database (testing using pytest in test_independent.py), you can run:
+
+		` python seed.py`
+
+	2.  Clear the database and start refresh
+
+		This will wipe the database of habits and completions completely. 
+
+	3.  Continue with existing data
+
+		You can continue where you left off. 
+	 
+		
+
+
+Then you’ll be guided through the available actions via an interactive menu:
 
 	•	Add new habits
 	•	Check off habits
 	•	Analyse progress
-	•	View habit lists
 	•	Delete or reset habits
 
 All data is stored locally in habits.db.
 
-### Predefined Habits
 
-To get started quickly, the app can load 5 predefined habits. These include:
-
-	•	Daily habits (e.g., Drink water)
-	•	Weekly habits (e.g., Workout)
-	•	Monthly habits (e.g., Pay bills)
-
-If you want to preload these habits into your database (for demo or testing), you can run:
-
-` python seed.py`
-
-(Or: enable populate_demo_habits() on first run — see main.py)
 
 ### Creating a New Habit
 
@@ -79,9 +93,9 @@ To add your own custom habit:
  
 		•	The name of the habit (e.g., “Read 10 pages”)
 		•	The periodicity:
-		•	daily
-		•	weekly
-		•	monthly
+			•	daily
+			•	weekly
+			•	monthly
 
 ### Checking Off a Habit
 
@@ -101,11 +115,25 @@ If you try to check off a habit again in the same period, the system will preven
 
 ### Analysis
 
-You can also:
+You can:
 
-	•	Analyze specific habits
-	•	View longest streaks
+	1.	Analyze specific habits. 
+
+			Returns:
+			-	the name
+			-	periodicity
+			-	creation date
+			-	total completions
+			-	longest streak, when it started and ended
+			-	the current streak, when it started and ended. 
+
+	2.   Compare progress across all habits by:
+		-	Return the longest run streak of every habit 
+		-	Return the habit with the longest overall streak 
+		-	Return a list of currently tracked habits
+		-   Return a list of habits with the same periodicity
 	•	Identify how often you broke your streak
+		
 
 Select “Analyse a specific habit” or “Longest overall habit streak” from the main menu to view insights.
 ⸻

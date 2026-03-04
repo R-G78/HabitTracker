@@ -1,11 +1,11 @@
 import os
 import pytest 
 from seed import seed_demo_data
-from db import get_db, create_tables, get_all_habits, add_habit, add_completion, get_completions, delete_habit, reset_database
+from db import get_db, create_tables, get_all_habits, add_habit, add_completion, get_completions, delete_habit, reset_database, get_habit_data
 from counter import Habit
 from datetime import datetime, timedelta
 import random
-from analyse import get_habits_by_periodicity, get_longest_streak_all, get_longest_streak_habit, calculate_all_streaks, calculate_current_streak, get_allHabit_summaries
+from analyse import get_longest_streak_all, get_longest_streak_habit, calculate_current_streak, get_allHabit_summaries
 
 
 @pytest.fixture
@@ -91,6 +91,37 @@ def test_create_increment_delete(temp_db):
     assert habit is None
     print ("Test habit no longer exists in the database.")
 
+def test_edge_cases(temp_db):
+    """Test edge cases that might occur in CLI usage."""
+    db = temp_db
+    
+    # Test with no habits
+    habits = get_all_habits(db)
+    assert len(habits) == 0
+    
+    summaries = get_allHabit_summaries(db)
+    assert len(summaries) == 0
+    
+    # Test analysis with empty database
+    result = get_longest_streak_all(db)
+    # Should handle empty database gracefully
+    
+    # Test with habit that has no completions
+    add_habit(db, "No Completions", "daily")
+    habits = get_all_habits(db)
+    habit_id = habits[0][0]
+    
+    completions = get_completions(db, habit_id)
+    max_streak, start_date, end_date, breaks = get_longest_streak_habit(completions, "daily")
+    
+    assert max_streak == 0
+    assert breaks == 0
+    
+    current_streak = calculate_current_streak(completions, "daily")
+    assert current_streak == 0
+    
+    print("✓ Edge cases handled correctly")
+
 def temp_db_close(temp_db):
      reset_database(temp_db)
      db, db_filename = temp_db
@@ -104,6 +135,41 @@ def temp_db_setup(temp_db):
     db = temp_db
     seed_demo_data(db)  # Pass the db connection
     return db
+
+def test_data_consistency(temp_db_setup):
+    """Test data consistency across different analysis functions."""
+    db = temp_db_setup
+    
+    habits = get_all_habits(db)
+    
+    for habit in habits:
+        habit_id = habit[0]
+        habit_name = habit[1]
+        periodicity = habit[2]
+        
+        # Get completions
+        completions = get_completions(db, habit_id)
+        
+        # Test that habit data is consistent
+        habit_data = get_habit_data(db, habit_id)
+        assert habit_data['name'] == habit_name
+        assert habit_data['periodicity'] == periodicity
+        assert habit_data['id'] == habit_id
+        
+        # Test that analysis functions don't crash
+        try:
+            max_streak, start_date, end_date, breaks = get_longest_streak_habit(completions, periodicity)
+            current_streak = calculate_current_streak(completions, periodicity)
+            
+            # Basic sanity checks
+            assert max_streak >= 0
+            assert breaks >= 0
+            
+        except Exception as e:
+            pytest.fail(f"Analysis failed for habit {habit_name}: {str(e)}")
+    
+    print("✓ Data consistency checks passed")
+
 
 def test_increment_constraints(temp_db_setup):
     """Test that checking off a habit on the same day or in the same week/month is not allowed."""
@@ -145,6 +211,7 @@ def test_increment_constraints(temp_db_setup):
     assert not result, "Should not allow checking off a monthly habit in the same month again."
     
 def test_analyse_all_habit(temp_db_setup):
+    """Test analysis functions for a specific habit."""
     db = temp_db_setup
 
     # Get all habits from the DB

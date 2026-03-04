@@ -6,7 +6,7 @@ It handles user interactions, menu navigation, and coordinates between different
 components of the system.
 
 Author: Renee I. Njiru
-Date: 2025-07-05
+Date: 2026-02-18
 """
 
 # Third-party imports
@@ -104,7 +104,7 @@ def cli():
                 print("\nYour habit has been created successfully. \nYou can now check it off as you complete it.")
                 
            
-        elif choice == "Check Off Habit": 
+        elif choice == "Check Off Habit":    
 
             habits = get_all_habits(db)
             if not habits:
@@ -136,8 +136,8 @@ def cli():
                 data['creation_date'], 
                 get_completions(db, habit_id))
             
-            habit.increment()
-            habit.update_current_streak()
+            habit.increment(db)
+            
 
             
         elif choice == "Delete Habit":
@@ -238,10 +238,12 @@ def cli():
                     print(f"Name: {habit_data['name']}")
                     print(f"Periodicity: {habit_data['periodicity']}")
                     print(f"Creation Date: {habit_data['creation_date']}")
+                    print(f"Days Since Creation: {days_since_creation}")
+                    print() #for readability
                     print(f"Total Completions: {total_completions}")
                     print(f"Longest Streak: {longest_streak}")
                     print(f"Current Streak: {current_streak}")
-                    print(f"Days Since Creation: {days_since_creation}")
+                    print() #for readability               
                     print("All Streaks:")
                     if all_streaks:
                         for i, streak in enumerate(all_streaks, 1):
@@ -264,8 +266,8 @@ def cli():
                     else:
                         current_streak, start_date = current_streak_result
                         print(f"Current streak: {current_streak} (since {start_date})")
-                    
 
+                    
             elif choices == "Analyze all habits":
                 choice = questionary.select(
                     "What would you like to know?",

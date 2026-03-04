@@ -1,7 +1,46 @@
 """
-db.py — Handles all database operations for the habit tracker.
-Requires: sqlite3, datetime, timedelta
-Used by: main.py, analytics.py
+db.py
+-----
+Handles all database operations for HabitTracker.
+
+Manages a SQLite database with two tables:
+    - habits:      Stores habit metadata (name, periodicity, streak, creation date)
+    - completions: Stores individual completion records linked to habits
+
+All functions accept a db connection as their first argument, except get_db()
+which creates and returns one. Pass the connection explicitly to support both
+normal operation and test isolation.
+
+Tables:
+    habits(id, task, periodicity, creation_date, streak)
+    completions(id, habit_id, completion_date)
+
+Functions:
+    get_db(name)                          → sqlite3.Connection
+    create_tables(db)                     → None
+    add_habit(db, task, periodicity)      → None
+    check_habit_exists(db, task, period)  → bool
+    add_completion(db, habit_id, date)    → None
+    check_last_completion(db, habit_name) → bool | None
+    get_habit_data(db, habit_identifier)  → dict
+    get_all_habits(db)                    → list[tuple]
+    get_habits_list(db)                   → list[str]
+    get_completions(db, habit_id)         → list[str]
+    delete_habit(db, habit_name)          → None
+    reset_database(db)                    → None
+
+Environment:
+    DB_PATH — optional env variable to override the default 'habits.db' path.
+              Set this in tests to use an in-memory or temporary database.
+              Example: os.environ['DB_PATH'] = ':memory:'
+
+Known limitations:
+    - delete_habit() does not delete associated completions first, which will
+      leave orphaned rows in the completions table.
+    - add_completion() and check_last_completion() look up habits by name,
+      not ID, which will break silently if two habits share the same name.
+    - get_habit_data() returns {"error": "..."} on failure instead of raising
+      an exception, which callers must remember to check for.
 """
 
 import sqlite3
@@ -23,7 +62,7 @@ def get_db(name=None):#
     db = sqlite3.connect(name)
     return db
 
-def create_tables(db=None):#
+def create_tables(db=None):#demo
     """
     Create the necessary tables in the database.
     
@@ -53,7 +92,7 @@ def create_tables(db=None):#
     db.commit()
 
 #Create habit functions
-def add_habit(db, task: str, periodicity: str):#
+def add_habit(db, task: str, periodicity: str):#habit.store 
     """
     Add a new habit to the database if it doesn't already exist.
     :param db: The database connection.
@@ -71,7 +110,7 @@ def add_habit(db, task: str, periodicity: str):#
     db.commit()
     print(f"Successfully added habit: '{task}' ({periodicity})")
     
-def check_habit_exists(db, task: str, periodicity: str):#
+def check_habit_exists(db, task: str, periodicity: str):#habit.store #
     """
     Check if a habit already exists in the database.
 
@@ -89,7 +128,7 @@ def check_habit_exists(db, task: str, periodicity: str):#
     
 #Check off functions
 
-def add_completion(db, habit_id: int, completion_date: str = None): #
+def add_completion(db, habit_id: int, completion_date: str = None): #habit.increment
     """
     Add a completion date for a habit and update streak count if necessary.
 
@@ -129,9 +168,15 @@ def add_completion(db, habit_id: int, completion_date: str = None): #
             (habit_id, completion_date)
         )
         db.commit()
+
+        cur.execute(
+            "UPDATE habits SET streak = streak + 1 WHERE id = ?",
+            (habit_id,)
+        )
+        db.commit()
         print (f"Habit checked for the period")
 
-def check_last_completion(db, habit_name, last_completion_date=None): #
+def check_last_completion(db, habit_name, last_completion_date=None): #habit.increment
     """
     Compares the last completion date of a habit with the current date
     and returns whether the habit can be checked off again based on its periodicity.
@@ -200,7 +245,7 @@ def check_last_completion(db, habit_name, last_completion_date=None): #
         else:
             return True
 
-def get_habit_data(db, habit_identifier): #
+def get_habit_data(db, habit_identifier): #habit.increment# analyze
     """
     Retrieve a habit's name, periodicity, current_streak and last completion date.
 
@@ -238,7 +283,7 @@ def get_habit_data(db, habit_identifier): #
     }
    
 
-def get_all_habits(db): #
+def get_all_habits(db): #increment #delete habit module# analyze
     """
     Retrieve a list of all habits from the database.
 
@@ -267,7 +312,7 @@ def get_habits_list(db): # i might need to use this
         habit_list.append(habit_name)
     return habit_list
 
-def get_completions(db, habit_id: int):#
+def get_completions(db, habit_id: int):#increment# analyze
     """
     Retrieve all completion dates for a specific habit.
 
@@ -281,7 +326,7 @@ def get_completions(db, habit_id: int):#
 
 
 
-def delete_habit(db, habit_name):#
+def delete_habit(db, habit_name):# delete habits
 
     """
     Delete a habit and its completion records from the database.
@@ -293,7 +338,7 @@ def delete_habit(db, habit_name):#
     db.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
     db.commit()
 
-def reset_database(db): #
+def reset_database(db): #demo #cleanup and restart #
     """
     Deletes all habits and completions from the database.
     Also resets the ID counters for both tables.

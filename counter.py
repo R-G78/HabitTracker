@@ -1,3 +1,20 @@
+"""
+counter.py
+--------
+Defines the Habit class, the core domain model for HabitTracker.
+
+Each Habit instance represents a single trackable habit and encapsulates:
+    - Its metadata (name, periodicity, creation date)
+    - Its completion history
+    - All streak calculation logic (current streak, max streak, breaks)
+    - Methods to persist itself and its completions to the database
+
+Dependencies:
+    - datetime for date handling
+
+
+"""
+
 from datetime import datetime, timedelta
 from db import get_db, add_habit, check_habit_exists, add_completion
 
@@ -28,27 +45,25 @@ class Habit:
         
             add_habit(db, self.task, self.periodicity)
     
-    def increment(self):
-        """Mark the habit as completed for the current period."""
-        db = get_db()
+    def increment(self, db):#increment
+        """Mark the habit as completed for the current period and updates the streak count."""
         add_completion(db, self.task, datetime.now().strftime("%Y-%m-%d"))
         self.update_current_streak()
 
-    def update_current_streak(self):
+    def update_current_streak(self,db):#habit.increment
         """Update the current streak attribute of the habit and sync with the database."""
         result = self.calculate_current_streak()
         self.streak = result[0] if isinstance(result, tuple) else 0
 
         # Update the database
-        conn = get_db()
+        conn = db if db else get_db()  # Use passed db or get a new connection
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE habits SET streak = ? WHERE id = ?",
-            (self.streak, self.task)
+            (self.streak, self.id)
         )
         conn.commit()
 
-    
     def calculate_max_streak_with_details(self): 
         """Calculate the maximum streak with start/end dates and number of breaks."""
         if not self.completion_dates:
@@ -95,7 +110,7 @@ class Habit:
 
         return max_streak, max_streak_start, max_streak_end, breaks  
     
-    def calculate_current_streak(self):
+    def calculate_current_streak(self):#habit.updatecurrent_streak
         """Calculate the current ongoing streak for the habit."""
     
         if not self.completion_dates:
@@ -108,7 +123,7 @@ class Habit:
         today = datetime.today().date()
         last_date = sorted_dates[-1]
 
-        # Check if the last completion is within the allowed "current" window
+        # Check if the last completion is within the allowed "current" window, if not returns steak as 0
         if self.periodicity == "daily" and (today - last_date).days > 1:
             return 0
         elif self.periodicity == "weekly" and (today - last_date).days > 7:

@@ -21,7 +21,7 @@ def get_allHabit_summaries(db):
         ...
     ]
     """
-    conn = get_db()
+    conn = db
     conn.row_factory = sqlite3.Row
     
 
@@ -123,7 +123,7 @@ def is_date_within_grace_period(expected_date: datetime, actual_date: datetime, 
                 expected_date.month == actual_date.month)
     return False
 
-def calculate_current_streak(completion_dates: List[str], periodicity: str) -> Tuple[int, str]:
+def calculate_current_streak(completion_dates: List[str], periodicity: str) -> Tuple[int, str]:# anaalyze specific habit. should i make a function that retrieves it from the database than calculate it?
     """
     Calculate current active streak.
     Returns (streak_length, start_date) or 0 if no active streak.
@@ -251,7 +251,7 @@ def calculate_all_streaks(completion_dates: List[str], periodicity: str, creatio
     
     return streaks
 
-def get_longest_streak_habit(completion_dates: List[str], periodicity: str) -> Tuple[int, str, str, int]:
+def get_longest_streak_habit(completion_dates: List[str], periodicity: str) -> Tuple[int, str, str, int]:# ANALYZE SPECIFIC HABIT
     """
     Get the longest streak for a specific habit.
     Returns (max_streak, start_date, end_date, breaks_count).
@@ -340,7 +340,7 @@ def get_longest_streak_all(db) -> Dict:
     
     return longest_overall
 
-def analyze_habit_performance(completion_dates: List[str], periodicity: str, creation_date: str = None) -> tuple:
+def analyze_habit_performance(completion_dates: List[str], periodicity: str, creation_date: str = None) -> tuple: #analyze
     """
     Comprehensive analysis of a habit's performance.
     Returns detailed statistics about the habit.
