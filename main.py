@@ -173,7 +173,7 @@ def cli():
             ).ask()
 
             if confirm:
-                delete_habit(habit_to_delete)
+                delete_habit(db, habit_to_delete)
                 print(f"Habit '{habit_to_delete}' deleted.")
             else:
                 print("Deletion cancelled.")
@@ -217,9 +217,9 @@ def cli():
                         continue
                     
                     habit = Habit(
-                        habit_data['id'],
                         habit_data['name'],
                         habit_data['periodicity'],
+                        habit_data['id'],
                         habit_data['current_streak'],
                         habit_data['creation_date'],
                         get_completions(db, selected_habit_id)
@@ -257,10 +257,11 @@ def cli():
                     if max_streak > 0:
                         print(f"  ➤ Start date: {start_date}")
                         print(f"  ➤ End date: {end_date}")
+                        print() # for readability
                     print(f"Number of streak breaks: {breaks}\n")
             
                     #Calculate current streak
-                    current_streak_result = calculate_current_streak(completion_dates, periodicity)
+                    current_streak_result= habit.calculate_current_streak()
                     if current_streak_result == 0:
                         print("No current streak.")
                     else:

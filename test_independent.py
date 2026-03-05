@@ -1,11 +1,29 @@
+"""
+test_independent.py
+-------------------
+Integration and pytest tests for the HabitTracker application.
+Tests are isolated using an in-memory SQLite database to avoid
+affecting any real data.
+
+Fixtures:
+    temp_db        — Creates a fresh in-memory database with tables for each test.
+                     Cleaned up automatically after each test.
+    temp_db_setup  — Extends temp_db by seeding it with realistic demo data
+                     via seed_demo_data(). Used for tests that need existing habits
+                     and completions.
+
+"""
+
+
 import os
 import pytest 
 from seed import seed_demo_data
 from db import get_db, create_tables, get_all_habits, add_habit, add_completion, get_completions, delete_habit, reset_database, get_habit_data
 from counter import Habit
 from datetime import datetime, timedelta
-import random
-from analyse import get_longest_streak_all, get_longest_streak_habit, calculate_current_streak, get_allHabit_summaries
+
+from analyse import get_longest_streak_all, get_longest_streak_habit, calculate_current_streak, get_allHabit_summaries, analyze_habit_performance
+
 
 
 @pytest.fixture
@@ -117,8 +135,9 @@ def test_edge_cases(temp_db):
     assert max_streak == 0
     assert breaks == 0
     
-    current_streak = calculate_current_streak(completions, "daily")
+    current_streak, start_date = calculate_current_streak(completions, "daily")
     assert current_streak == 0
+    assert start_date is None
     
     print("✓ Edge cases handled correctly")
 
@@ -214,43 +233,49 @@ def test_analyse_all_habit(temp_db_setup):
     """Test analysis functions for a specific habit."""
     db = temp_db_setup
 
-    # Get all habits from the DB
     habits = db.execute("SELECT id, task, periodicity, creation_date FROM habits").fetchall()
     assert habits, "No habits found in test DB"
-    
+
     for habit_row in habits:
         habit_id, task, periodicity, creation_date = habit_row
 
-        # Get completions for that habit
         completions = get_completions(db, habit_id)
         assert completions, f"No completions found for habit '{task}'"
 
-        # Create a Habit instance
-        habit = Habit(task=task , periodicity=periodicity, creation_date=creation_date, completion_dates=completions)
+        # Full performance analysis
+        total_completions, longest_streak, current_streak, all_streaks, days_since_creation = analyze_habit_performance(
+            completions, periodicity, creation_date
+        )
 
-        # Max streak analysis
-        max_streak, start_date, end_date, breaks = habit.calculate_max_streak_with_details()
-        print(f"Max streak for '{task}': {max_streak}")
-        if max_streak > 0:
-            print ("Which:")
-            print(f"  ➤ Started on date: {start_date}")
-            print(f"  ➤ Ended on date: {end_date}")
-        print(f"Number of streak breaks: {breaks}\n")
+        assert isinstance(total_completions, int)
+        assert isinstance(longest_streak, int)
+        assert isinstance(current_streak, int)
+        assert isinstance(all_streaks, list)
+        assert isinstance(days_since_creation, int)
+        assert total_completions >= 0
+        assert longest_streak >= 0
+        assert current_streak >= 0
+
+        # Longest streak details
+        max_streak, start_date, end_date, breaks = get_longest_streak_habit(completions, periodicity)
 
         assert isinstance(max_streak, int)
         assert isinstance(breaks, int)
+        assert breaks >= 0
         if max_streak > 0:
             assert start_date is not None and end_date is not None
             assert start_date <= end_date
 
-        # Current streak
+        # Current streak via class method
+        habit = Habit(task=task, periodicity=periodicity, creation_date=creation_date, completion_dates=completions)
         current_result = habit.calculate_current_streak()
-        if current_result == 0:
-            assert True  # No current streak
-        else:
-            current_streak, streak_start_date = current_result
-            assert isinstance(current_streak, int)
+        current_streak_val, streak_start_date = current_result
+        assert isinstance(current_streak_val, int)
+        if current_streak_val > 0:
             assert isinstance(streak_start_date, str)
+        else:
+            assert streak_start_date is None
+
 
 def temp_db_close(temp2_db):
      reset_database(temp2_db)

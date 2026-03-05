@@ -1,69 +1,41 @@
-from db import get_db, get_habit_data, get_all_habits, get_completions
+"""
+analytics.py
+------------
+Provides all streak calculation and habit performance analysis for HabitTracker.
+Each function operates on raw completion date lists and a periodicity string,
+keeping analysis logic decoupled from the database layer.
+
+Core responsibilities:
+    - Calculating current active streaks for a habit
+    - Finding the longest streak a habit has ever had
+    - Breaking down the full streak history across all time
+    - Aggregating streak data across every habit in the database
+    - Summarising overall habit performance in a single call
+
+
+
+"""
+
+from db import get_habit_data, get_completions
 from datetime import datetime, timedelta
 import sqlite3
 from typing import List, Tuple, Optional, Dict
-
-def get_all_habits(db):
-    """Return a list of all habits."""
-    cur = db.cursor()
-    cur.execute("SELECT * FROM habits")
-    return cur.fetchall()
-
 
 
 def get_allHabit_summaries(db):
     """
     Returns a list of all habits with their id, name, periodicity, and start (creation) date.
-    Example:
-    [
-        {"id": 1, "name": "Workout", "periodicity": "daily", "start_date": "2025-04-01"},
-        {"id": 2, "name": "Meditate", "periodicity": "weekly", "start_date": "2025-03-15"},
-        ...
-    ]
     """
-    conn = db
-    conn.row_factory = sqlite3.Row
-    
-
-    try:
-        # Option 1: Try 'name' column
-        cursor = conn.execute("""
-            SELECT
-                habits.id as id,
-                habits.name AS name,
-                habits.periodicity,
-                habits.creation_date AS start_date
-            FROM habits
-        """)
-    except sqlite3.OperationalError:
-        try:
-            # Option 2: Try 'task' column (but without the table prefix that's causing issues)
-            cursor = conn.execute("""
-                SELECT
-                    id,
-                    task AS name,
-                    periodicity,
-                    creation_date AS start_date
-                FROM habits
-            """)
-        except sqlite3.OperationalError:
-            try:
-                # Option 3: Try 'habit_name' column
-                cursor = conn.execute("""
-                    SELECT
-                        id,
-                        habit_name AS name,
-                        periodicity,
-                        creation_date AS start_date
-                    FROM habits
-                """)
-            except sqlite3.OperationalError:
-                # If all else fails, let's see what columns exist
-                cursor = conn.execute("PRAGMA table_info(habits)")
-                columns = cursor.fetchall()
-                column_names = [col[1] for col in columns]
-                raise ValueError(f"Could not find habit name column. Available columns: {column_names}")
-    
+    cursor = db.cursor()
+    cursor.row_factory = sqlite3.Row
+    cursor.execute("""
+        SELECT
+            id,
+            task AS name,
+            periodicity,
+            creation_date AS start_date
+        FROM habits
+    """)
     return [
         {
             "id": row["id"],
@@ -123,48 +95,50 @@ def is_date_within_grace_period(expected_date: datetime, actual_date: datetime, 
                 expected_date.month == actual_date.month)
     return False
 
-def calculate_current_streak(completion_dates: List[str], periodicity: str) -> Tuple[int, str]:# anaalyze specific habit. should i make a function that retrieves it from the database than calculate it?
+def calculate_current_streak(completion_dates: List[str], periodicity: str) -> Tuple[int, str]:
     """
-    Calculate current active streak.
-    Returns (streak_length, start_date) or 0 if no active streak.
+    Calculate the current active streak for a habit.
+    Returns (streak_length, start_date) or (0, None) if no active streak.
     """
     if not completion_dates:
-        return 0
-    
+        return 0, None
+
     parsed_dates = []
     for date_str in completion_dates:
         try:
             parsed_dates.append(parse_date(date_str))
         except ValueError:
             continue
-    
+
     if not parsed_dates:
-        return 0
-    
+        return 0, None
+
     parsed_dates.sort()
     today = datetime.now()
     last_completion = parsed_dates[-1]
-    
-    # Check if streak is still active
     expected_next = get_expected_next_date(last_completion, periodicity)
-    is_overdue = today.date() > expected_next.date()
-    
-    if periodicity == 'weekly':
+
+    # Check if streak is still active — all three periodicities handled explicitly
+    if periodicity == 'daily':
+        is_overdue = today.date() > expected_next.date()
+    elif periodicity == 'weekly':
         is_overdue = today.date() > (expected_next + timedelta(days=6)).date()
     elif periodicity == 'monthly':
-        is_overdue = (today.year > expected_next.year or 
+        is_overdue = (today.year > expected_next.year or
                      (today.year == expected_next.year and today.month > expected_next.month))
-    
+    else:
+        raise ValueError(f"Unsupported periodicity: {periodicity}")
+
     if is_overdue:
-        return 0
-    
-    # Calculate current streak by working backwards
+        return 0, None
+
+    # Count streak backwards from most recent completion
     current_streak_length = 1
     current_date = last_completion
-    
+
     for i in range(len(parsed_dates) - 2, -1, -1):
         previous_date = parsed_dates[i]
-        
+
         if periodicity == 'daily':
             expected_previous_date = current_date - timedelta(days=1)
         elif periodicity == 'weekly':
@@ -177,18 +151,16 @@ def calculate_current_streak(completion_dates: List[str], periodicity: str) -> T
                     expected_previous_date = current_date.replace(month=current_date.month - 1)
                 except ValueError:
                     prev_month = current_date.replace(month=current_date.month - 1, day=1)
-                    last_day_prev_month = (prev_month.replace(month=prev_month.month % 12 + 1) - timedelta(days=1)).day
-                    expected_previous_date = prev_month.replace(day=min(current_date.day, last_day_prev_month))
-        
+                    last_day = (prev_month.replace(month=prev_month.month % 12 + 1) - timedelta(days=1)).day
+                    expected_previous_date = prev_month.replace(day=min(current_date.day, last_day))
+
         if is_date_within_grace_period(expected_previous_date, previous_date, periodicity):
             current_streak_length += 1
             current_date = previous_date
         else:
             break
-    
-    streak_start_index = len(parsed_dates) - current_streak_length
-    start_date = parsed_dates[streak_start_index].strftime('%Y-%m-%d')
-    
+
+    start_date = parsed_dates[len(parsed_dates) - current_streak_length].strftime('%Y-%m-%d')
     return current_streak_length, start_date
 
 def calculate_all_streaks(completion_dates: List[str], periodicity: str, creation_date: str = None) -> List[Dict]:
@@ -317,18 +289,19 @@ def get_longest_streak_all(db) -> Dict:
     Get the longest streak across all habits.
     Returns dict with habit info and streak details.
     """
-    habits = get_all_habits(db)
+    cur = db.cursor()
+    cur.execute("SELECT id, task FROM habits")
+    habits = cur.fetchall()
+
     longest_overall = {'streak': 0, 'habit': None, 'start_date': None, 'end_date': None, 'breaks': 0}
-    
-    for habit in habits:
-        habit_id, habit_name = habit[0], habit[1]
-        habit_data = get_habit_data(db, habit_id)  # Fixed: pass habit_id instead of entire habit tuple
-        
+
+    for habit_id, habit_name in habits:
+        habit_data = get_habit_data(db, habit_id)
         completions = get_completions(db, habit_id)
         periodicity = habit_data['periodicity']
-        
+
         max_streak, start_date, end_date, breaks = get_longest_streak_habit(completions, periodicity)
-        
+
         if max_streak > longest_overall['streak']:
             longest_overall = {
                 'streak': max_streak,
@@ -337,36 +310,23 @@ def get_longest_streak_all(db) -> Dict:
                 'end_date': end_date,
                 'breaks': breaks
             }
-    
+
     return longest_overall
 
-def analyze_habit_performance(completion_dates: List[str], periodicity: str, creation_date: str = None) -> tuple: #analyze
+def analyze_habit_performance(completion_dates: List[str], periodicity: str, creation_date: str = None) -> tuple:
     """
     Comprehensive analysis of a habit's performance.
-    Returns detailed statistics about the habit.
+    Returns (total_completions, longest_streak, current_streak, all_streaks, days_since_creation).
     """
     if not completion_dates:
         return 0, 0, 0, [], 0
-    
-    # Basic stats
+
     total_completions = len(completion_dates)
     all_streaks = calculate_all_streaks(completion_dates, periodicity, creation_date)
-    
-    # Get longest streak (extract just the number if it returns a tuple)
-    longest_streak_result = get_longest_streak_habit(completion_dates, periodicity)
-    if isinstance(longest_streak_result, tuple):
-        longest_streak = longest_streak_result[0]  # Get just the streak number
-    else:
-        longest_streak = longest_streak_result
-    
-    # Get current streak (extract just the number if it returns a tuple)
-    current_streak_result = calculate_current_streak(completion_dates, periodicity)
-    if isinstance(current_streak_result, tuple):
-        current_streak = current_streak_result[0]  # Get just the streak number
-    else:
-        current_streak = current_streak_result
-    
-    # Calculate days since creation
+
+    longest_streak, _, _, _ = get_longest_streak_habit(completion_dates, periodicity)
+    current_streak, _ = calculate_current_streak(completion_dates, periodicity)
+
     days_since_creation = 0
     if creation_date:
         try:
@@ -374,7 +334,7 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
             days_since_creation = (datetime.now() - creation_dt).days
         except ValueError:
             pass
-    
+
     return (
         total_completions,
         longest_streak,
@@ -382,4 +342,3 @@ def analyze_habit_performance(completion_dates: List[str], periodicity: str, cre
         all_streaks,
         days_since_creation
     )
-   

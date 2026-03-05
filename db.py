@@ -7,40 +7,6 @@ Manages a SQLite database with two tables:
     - habits:      Stores habit metadata (name, periodicity, streak, creation date)
     - completions: Stores individual completion records linked to habits
 
-All functions accept a db connection as their first argument, except get_db()
-which creates and returns one. Pass the connection explicitly to support both
-normal operation and test isolation.
-
-Tables:
-    habits(id, task, periodicity, creation_date, streak)
-    completions(id, habit_id, completion_date)
-
-Functions:
-    get_db(name)                          → sqlite3.Connection
-    create_tables(db)                     → None
-    add_habit(db, task, periodicity)      → None
-    check_habit_exists(db, task, period)  → bool
-    add_completion(db, habit_id, date)    → None
-    check_last_completion(db, habit_name) → bool | None
-    get_habit_data(db, habit_identifier)  → dict
-    get_all_habits(db)                    → list[tuple]
-    get_habits_list(db)                   → list[str]
-    get_completions(db, habit_id)         → list[str]
-    delete_habit(db, habit_name)          → None
-    reset_database(db)                    → None
-
-Environment:
-    DB_PATH — optional env variable to override the default 'habits.db' path.
-              Set this in tests to use an in-memory or temporary database.
-              Example: os.environ['DB_PATH'] = ':memory:'
-
-Known limitations:
-    - delete_habit() does not delete associated completions first, which will
-      leave orphaned rows in the completions table.
-    - add_completion() and check_last_completion() look up habits by name,
-      not ID, which will break silently if two habits share the same name.
-    - get_habit_data() returns {"error": "..."} on failure instead of raising
-      an exception, which callers must remember to check for.
 """
 
 import sqlite3
@@ -245,13 +211,13 @@ def check_last_completion(db, habit_name, last_completion_date=None): #habit.inc
         else:
             return True
 
-def get_habit_data(db, habit_identifier): #habit.increment# analyze
+def get_habit_data(db, habit_identifier):#habit.increment# analyze
     """
     Retrieve a habit's name, periodicity, current_streak and last completion date.
-
     :param db: SQLite DB connection
     :param habit_identifier: Either the habit name (str) or ID (int)
     :return: dict with name, periodicity, current_streak and last completion date
+    :raises ValueError: If the habit is not found
     """
     cur = db.cursor()
     if isinstance(habit_identifier, int):
@@ -261,11 +227,10 @@ def get_habit_data(db, habit_identifier): #habit.increment# analyze
 
     habit = cur.fetchone()
     if not habit:
-        return {"error": "Habit not found."}
+        raise ValueError(f"Habit '{habit_identifier}' not found.")
 
     habit_id, task, periodicity, creation_date, streak = habit
 
-    # Get last completion date
     cur.execute(
         "SELECT completion_date FROM completions WHERE habit_id = ? ORDER BY completion_date DESC LIMIT 1",
         (habit_id,)
@@ -281,7 +246,6 @@ def get_habit_data(db, habit_identifier): #habit.increment# analyze
         "creation_date": creation_date,
         "last_completion_date": last_completion
     }
-   
 
 def get_all_habits(db): #increment #delete habit module# analyze
     """
@@ -324,17 +288,13 @@ def get_completions(db, habit_id: int):#increment# analyze
     cur.execute("SELECT completion_date FROM completions WHERE habit_id=?", (habit_id,))
     return [row[0] for row in cur.fetchall()]
 
-
-
-def delete_habit(db, habit_name):# delete habits
-
-    """
-    Delete a habit and its completion records from the database.
-    """
-    # Delete completions first to avoid foreign key constraint issues
-   
-    # Assuming habit_name is unique
-    # Delete completions associated with the habit
+def delete_habit(db, habit_name):
+    """Delete a habit and its completion records from the database."""
+    habit = db.execute("SELECT id FROM habits WHERE task = ?", (habit_name,)).fetchone()
+    if habit is None:
+        return
+    habit_id = habit[0]
+    db.execute("DELETE FROM completions WHERE habit_id = ?", (habit_id,))
     db.execute("DELETE FROM habits WHERE task = ?", (habit_name,))
     db.commit()
 
